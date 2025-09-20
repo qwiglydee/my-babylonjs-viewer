@@ -4,6 +4,7 @@ import { customElement, property, query } from "lit/decorators.js";
 
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
+import { debug, debugChanges } from "./utils/debug";
 
 @customElement('my-element')
 export class MyElement extends ReactiveElement {
@@ -14,6 +15,7 @@ export class MyElement extends ReactiveElement {
         super.connectedCallback();
         this.#renderHTML();
         this.#setup();
+        debug(this, "connected", { foo: this.foo });
     }
 
     override disconnectedCallback(): void {
@@ -58,7 +60,7 @@ export class MyElement extends ReactiveElement {
     }
 
     override update(changes: PropertyValues) {
-        console.debug(this.tagName, Array.from(changes.keys()))
         super.update(changes);
+        debugChanges(this, 'update', changes);
     }
 }
