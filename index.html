@@ -9,21 +9,34 @@
         body {
             width: 100vw;
             height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: start;
+            gap: 16px;
+            padding: 16px;
         }
 
-        my-element {
+        my-viewer {
             width: 800px;
             height: 600px;
+        }
+
+        section {
+            margin-bottom: 1rem;
+            padding: 1rem;
         }
     </style>
     <script type="module" src="./src/index.ts"></script>
 </head>
 
 <body>
-    <my-element></my-element>
+    <my-viewer></my-viewer>
 </body>
+
 <script>
-    var my = document.querySelector("my-element");
+    var my = {
+        viewer: document.querySelector("my-viewer"),
+    }
 </script>
 
 </html>
