@@ -1,6 +1,7 @@
 import { css, html, ReactiveElement, render } from "lit";
 import type { PropertyValues } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
+import { provide } from "@lit/context";
 
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene, type SceneOptions } from "@babylonjs/core/scene";
@@ -8,9 +9,15 @@ import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { CreateIcoSphere } from "@babylonjs/core/Meshes/Builders/icoSphereBuilder";
 import "@babylonjs/core/Helpers/sceneHelpers"; // FIXME
 
-import { debugChanges } from "./utils/debug";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import type { EngineOptions } from "@babylonjs/core/Engines/thinEngine";
+
+import { debugChanges } from "./utils/debug";
+import { sceneCtx, type SceneCtx } from "./context";
+import { bubbleEvent } from "./utils/events";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { BoundingBox } from "@babylonjs/core/Culling/boundingBox";
+import { Tags } from "@babylonjs/core/Misc/tags";
 
 
 const ENGOPTIONS: EngineOptions = {
@@ -29,6 +36,9 @@ export class MyViewerElement extends ReactiveElement {
 
     engine!: Engine;
     scene!: Scene;
+
+    @provide({ context: sceneCtx })
+    ctx!: SceneCtx;
 
     static override styles = css`
         :host {
@@ -55,8 +65,8 @@ export class MyViewerElement extends ReactiveElement {
 
     _needresize: boolean = false;
     #resizingObs!: ResizeObserver;
-    
-    @state() 
+
+    @state()
     _visible: boolean = true;
     #visibilityObs!: IntersectionObserver;
 
@@ -67,7 +77,7 @@ export class MyViewerElement extends ReactiveElement {
             () => { this._needresize = false; }
         );
         this.#visibilityObs = new IntersectionObserver(
-            (entries) => { this._visible = entries[0].isIntersecting; }, 
+            (entries) => { this._visible = entries[0].isIntersecting; },
             { threshold: 0.5 }
         );
     }
@@ -86,18 +96,20 @@ export class MyViewerElement extends ReactiveElement {
         this.#dispose();
         super.disconnectedCallback();
     }
-    
+
     #setup() {
         this.engine = new Engine(this.canvas, undefined, ENGOPTIONS);
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
 
-        CreateIcoSphere("#dumb", {}, this.scene); // FIXME
-        // this.scene.createDefaultEnvironment(); // FIXME
+        let dumb = CreateIcoSphere("#dumb", {}, this.scene); // FIXME
+        Tags.AddTagsTo(dumb, "model");
+        this.scene.createDefaultEnvironment({ skyboxSize: 10 }); // FIXME
         this.scene.createDefaultLight(); // FIXME
         this.scene.createDefaultCamera(true, true, true); // FIXME
         (this.scene.activeCamera as ArcRotateCamera).useAutoRotationBehavior = true;
 
+        this.#updateCtx();
     }
 
     #dispose() {
@@ -108,6 +120,14 @@ export class MyViewerElement extends ReactiveElement {
     #render = () => {
         if (!this._needresize) { this.engine.resize(); this._needresize = true; }
         this.scene.render();
+    }
+
+    #updateCtx() {
+        this.ctx = {
+            scene: this.scene,
+            bounds: Mesh.MinMax(this.scene.getMeshesByTags('model')),
+        }
+        bubbleEvent(this, 'scene-updated', this.ctx);
     }
 
     override update(changes: PropertyValues) {

@@ -30,13 +30,19 @@
 </head>
 
 <body>
-    <my-viewer></my-viewer>
+    <my-viewer>
+        <my-stub></my-stub>
+    </my-viewer>
 </body>
 
 <script>
     var my = {
         viewer: document.querySelector("my-viewer"),
     }
+
+    my.viewer.addEventListener('scene-updated', function(e) {
+        console.debug(e.type, e.detail);
+    });
 </script>
 
 </html>
