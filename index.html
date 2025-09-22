@@ -31,13 +31,14 @@
 
 <body>
     <my-viewer>
-        <my-stub></my-stub>
+        <my-camera autospin></my-camera>
     </my-viewer>
 </body>
 
 <script>
     var my = {
         viewer: document.querySelector("my-viewer"),
+        camera: document.querySelector('my-camera'),
     }
 
     my.viewer.addEventListener('scene-updated', function(e) {

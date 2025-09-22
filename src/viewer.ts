@@ -9,14 +9,12 @@ import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { CreateIcoSphere } from "@babylonjs/core/Meshes/Builders/icoSphereBuilder";
 import "@babylonjs/core/Helpers/sceneHelpers"; // FIXME
 
-import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import type { EngineOptions } from "@babylonjs/core/Engines/thinEngine";
 
 import { debugChanges } from "./utils/debug";
 import { sceneCtx, type SceneCtx } from "./context";
 import { bubbleEvent } from "./utils/events";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
-import { BoundingBox } from "@babylonjs/core/Culling/boundingBox";
 import { Tags } from "@babylonjs/core/Misc/tags";
 
 
@@ -106,8 +104,6 @@ export class MyViewerElement extends ReactiveElement {
         Tags.AddTagsTo(dumb, "model");
         this.scene.createDefaultEnvironment({ skyboxSize: 10 }); // FIXME
         this.scene.createDefaultLight(); // FIXME
-        this.scene.createDefaultCamera(true, true, true); // FIXME
-        (this.scene.activeCamera as ArcRotateCamera).useAutoRotationBehavior = true;
 
         this.#updateCtx();
     }

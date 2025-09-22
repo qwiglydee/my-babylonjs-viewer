@@ -1,2 +1,2 @@
 import "./viewer";
-import "./stub";
+import "./camera";

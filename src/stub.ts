@@ -14,6 +14,24 @@ export class MyStubElem extends ReactiveElement {
     @state()
     ctx!: SceneCtx;
 
+    override connectedCallback(): void {
+        super.connectedCallback();
+        this.#init();
+    }
+
+    override disconnectedCallback(): void {
+        this.#dispose();
+        super.disconnectedCallback()
+    }
+
+    #init() {
+
+    }
+
+    #dispose() {
+
+    }
+    
     override update(changes: PropertyValues) {
         super.update(changes);
         debugChanges(this, 'update', changes);
