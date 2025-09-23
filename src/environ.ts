@@ -1,6 +1,6 @@
 import { ReactiveElement, type PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { consume } from "@lit/context";
+import { consume, provide } from "@lit/context";
 
 import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import { Tools } from "@babylonjs/core/Misc/tools";
@@ -8,7 +8,7 @@ import type { Nullable } from "@babylonjs/core/types";
 
 import { assert } from "./utils/asserts";
 
-import { sceneCtx, type SceneCtx } from "./context";
+import { envCtx, sceneCtx, type EnvCtx, type SceneCtx } from "./context";
 import { debugChanges } from "./utils/debug";
 
 const DEFAULT_ENV = new URL("./assets/default.env?inline", import.meta.url);
@@ -26,6 +26,9 @@ export class MyEnvElem extends ReactiveElement {
 
     @property({ type: Number })
     rotation: number = 0;
+
+    @provide({ context: envCtx })
+    env!: EnvCtx;
 
     override connectedCallback(): void {
         super.connectedCallback();
@@ -48,6 +51,7 @@ export class MyEnvElem extends ReactiveElement {
             this._texture.level = this.intensity;
             this._texture.rotationY = Tools.ToRadians(this.rotation);
             this.ctx.scene.environmentTexture = this._texture;
+            this.env = { texture: this._texture }
         });
     }
 
