@@ -32,6 +32,7 @@
 <body>
     <my-viewer>
         <my-camera autospin></my-camera>
+        <my-environ src="assets/parking.env" intensity="0.5"></my-environ>
         <my-stub src="foo"></my-stub>
     </my-viewer>
 </body>
@@ -40,6 +41,7 @@
     var my = {
         viewer: document.querySelector("my-viewer"),
         camera: document.querySelector('my-camera'),
+        environ: document.querySelector('my-environ'),
     }
 
     my.viewer.addEventListener('scene-updated', function(e) {

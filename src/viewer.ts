@@ -6,8 +6,6 @@ import { provide } from "@lit/context";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene, type SceneOptions } from "@babylonjs/core/scene";
 import { Color4 } from "@babylonjs/core/Maths/math.color";
-import { CreateIcoSphere } from "@babylonjs/core/Meshes/Builders/icoSphereBuilder";
-import "@babylonjs/core/Helpers/sceneHelpers"; // FIXME
 
 import type { EngineOptions } from "@babylonjs/core/Engines/thinEngine";
 
@@ -16,6 +14,10 @@ import { sceneCtx, type SceneCtx } from "./context";
 import { bubbleEvent } from "./utils/events";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Tags } from "@babylonjs/core/Misc/tags";
+
+// dumb
+import { PBRMetallicRoughnessMaterial } from "@babylonjs/core/Materials/PBR/pbrMetallicRoughnessMaterial";
+import { CreateIcoSphere } from "@babylonjs/core/Meshes/Builders/icoSphereBuilder";
 
 
 const ENGOPTIONS: EngineOptions = {
@@ -100,10 +102,12 @@ export class MyViewerElement extends ReactiveElement {
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
 
-        let dumb = CreateIcoSphere("#dumb", {}, this.scene); // FIXME
+        let dumb = CreateIcoSphere("#dumb", { subdivisions: 64 }, this.scene); // FIXME
         Tags.AddTagsTo(dumb, "model");
-        this.scene.createDefaultEnvironment({ skyboxSize: 10 }); // FIXME
-        this.scene.createDefaultLight(); // FIXME
+        let dumbmat = new PBRMetallicRoughnessMaterial("default", this.scene);
+        dumbmat.metallic = 1;
+        dumbmat.roughness = 0;
+        dumb.material = dumbmat;
 
         this.#updateCtx();
     }
