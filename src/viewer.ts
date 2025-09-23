@@ -109,7 +109,7 @@ export class MyViewerElement extends ReactiveElement {
         dumbmat.roughness = 0;
         dumb.material = dumbmat;
 
-        this.#updateCtx();
+        this.updateCtx();
     }
 
     #dispose() {
@@ -122,7 +122,7 @@ export class MyViewerElement extends ReactiveElement {
         this.scene.render();
     }
 
-    #updateCtx() {
+    updateCtx() {
         this.ctx = {
             scene: this.scene,
             bounds: Mesh.MinMax(this.scene.getMeshesByTags('model')),

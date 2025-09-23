@@ -14,6 +14,7 @@ import { BackgroundMaterial } from "@babylonjs/core/Materials/Background/backgro
 import { Color3, Vector3 } from "@babylonjs/core/Maths/math";
 import type { Nullable } from "@babylonjs/core/types";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
+import { Tags } from "@babylonjs/core/Misc/tags";
 
 
 @customElement('my-sky')
@@ -52,6 +53,7 @@ export class MyStubElem extends ReactiveElement {
 
     #init() {
         this._mesh = CreateBox("#sky", { sideOrientation: Mesh.BACKSIDE }, this.ctx.scene);
+        Tags.AddTagsTo(this._mesh, 'env');
         this._mesh.scaling = Vector3.One().scale(this.size);
         this._mesh.isPickable = false;
         this._mesh.infiniteDistance = true;
