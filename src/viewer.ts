@@ -6,14 +6,18 @@ import { customElement, query, state } from "lit/decorators.js";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import type { EngineOptions } from "@babylonjs/core/Engines/thinEngine";
 import { Color4 } from "@babylonjs/core/Maths/math.color";
-import { Scene, type SceneOptions } from "@babylonjs/core/scene";
 import { Tags } from "@babylonjs/core/Misc/tags";
+import { Scene, type SceneOptions } from "@babylonjs/core/scene";
+
+import "@babylonjs/core/Rendering/boundingBoxRenderer";
 
 import { debugChanges } from "./utils/debug";
 import { queueEvent } from "./utils/events";
 
 import { sceneCtx, type SceneCtx } from "./context";
-import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
+import { LoadAssetsAsync } from "./loading";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Vector3 } from "@babylonjs/core/Maths/math";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
@@ -23,6 +27,10 @@ const ENGOPTIONS: EngineOptions = {
 const SCNOPTIONS: SceneOptions = {
 }
 
+const NULLBOUNDS = {
+    min: Vector3.One().scale(-10),
+    max: Vector3.One().scale(10),
+}
 
 @customElement('my-viewer')
 export class MyViewerElement extends ReactiveElement {
@@ -111,9 +119,10 @@ export class MyViewerElement extends ReactiveElement {
     @state() _ctx_dirty = false;
 
     updateCtx() {
+        const meshes = this.scene.getMeshesByTags('model');
         this.ctx = {
             scene: this.scene,
-            bounds: this.scene.getWorldExtends((m: AbstractMesh) => Tags.MatchesQuery(m, "model")),
+            bounds: meshes.length ? Mesh.MinMax(meshes) : NULLBOUNDS,
         }
     }
 
@@ -136,5 +145,19 @@ export class MyViewerElement extends ReactiveElement {
     override updated(changes: PropertyValues) {
         super.updated(changes);
         if (changes.has('_ctx_dirty')) queueEvent(this, 'scene-updated', this.ctx);
+    }
+
+    // testing
+
+    __clear() {
+        this.scene.getMeshesByTags('model').forEach(m => this.scene.removeMesh(m));
+    }
+    async __load(url: string) {
+        const assets = await LoadAssetsAsync(this.scene, url);
+        assets.meshes.forEach(m => {
+            Tags.AddTagsTo(m, "model");
+            this.scene.addMesh(m);
+        });
+        this.updateCtx();
     }
 }

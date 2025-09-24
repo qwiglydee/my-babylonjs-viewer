@@ -14,6 +14,7 @@ import type { Nullable } from "@babylonjs/core/types";
 
 import { assert } from "./utils/asserts";
 import { envCtx, sceneCtx, type EnvCtx, type SceneCtx } from "./context";
+import { debug } from "./utils/debug";
 
 const GROUND_TXT = new URL("./assets/ground.png?inline", import.meta.url);
 
@@ -77,7 +78,7 @@ export class MyStubElem extends ReactiveElement {
         this._mesh.material = this._material;
     }
 
-    #adjust() {
+    reframe() {
         let scaling = 1;
         
         if (this.size) {
@@ -89,8 +90,6 @@ export class MyStubElem extends ReactiveElement {
             );
         }
         scaling *= this.sizeFactor;
-
-        this._mesh.position.y = this.ctx.bounds.min.y;
         this._mesh.scaling.x = scaling;
         this._mesh.scaling.z = scaling;
     }
@@ -101,7 +100,7 @@ export class MyStubElem extends ReactiveElement {
 
     override update(changes: PropertyValues) {
         super.update(changes);
-        if (changes.has('ctx') || changes.has('size') || changes.has('sizeFactor')) this.#adjust();
+        if (changes.has('ctx') || changes.has('size') || changes.has('sizeFactor')) this.reframe();
         if (changes.has('color')) this._material.primaryColor = Color3.FromHexString(this.color);
         if (changes.has('opacity')) this._material.alpha = this.opacity;
     }

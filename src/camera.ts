@@ -5,7 +5,7 @@ import { consume} from "@lit/context";
 
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Tools } from "@babylonjs/core/Misc/tools";
-import { Vector3 } from "@babylonjs/core/Maths/math";
+import { Epsilon, Vector3 } from "@babylonjs/core/Maths/math";
 
 import { sceneCtx, type SceneCtx } from "./context";
 
@@ -63,12 +63,14 @@ export class MyCameraElem extends ReactiveElement {
 
     reframe() {
         this.camera.autoRotationBehavior?.resetLastInteractionTime();
-        const distance = this.#calcDistance();
-        this.camera.target = Vector3.Center(this.ctx.bounds.min, this.ctx.bounds.max);
-        this.camera.radius = distance;
-        this.camera.alpha = Tools.ToRadians(this.alpha);
-        this.camera.beta = Tools.ToRadians(this.beta);
+        let distance = this.#calcDistance();
         this.#adjLimits(distance);
+        this.camera.interpolateTo(
+            Tools.ToRadians(this.alpha),
+            Tools.ToRadians(this.beta), 
+            distance, 
+            Vector3.Center(this.ctx.bounds.min, this.ctx.bounds.max)
+        );
     }
 
     #adjLimits(radius: number) {
