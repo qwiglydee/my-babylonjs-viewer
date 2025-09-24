@@ -1,24 +1,19 @@
-import { css, html, ReactiveElement, render } from "lit";
-import type { PropertyValues } from "lit";
-import { customElement, query, state } from "lit/decorators.js";
 import { provide } from "@lit/context";
+import type { PropertyValues } from "lit";
+import { css, html, ReactiveElement, render } from "lit";
+import { customElement, query, state } from "lit/decorators.js";
 
 import { Engine } from "@babylonjs/core/Engines/engine";
-import { Scene, type SceneOptions } from "@babylonjs/core/scene";
-import { Color4 } from "@babylonjs/core/Maths/math.color";
-
 import type { EngineOptions } from "@babylonjs/core/Engines/thinEngine";
-
-import { debugChanges } from "./utils/debug";
-import { sceneCtx, type SceneCtx } from "./context";
-import { bubbleEvent } from "./utils/events";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Color4 } from "@babylonjs/core/Maths/math.color";
+import { Scene, type SceneOptions } from "@babylonjs/core/scene";
 import { Tags } from "@babylonjs/core/Misc/tags";
 
-// dumb
-import { PBRMetallicRoughnessMaterial } from "@babylonjs/core/Materials/PBR/pbrMetallicRoughnessMaterial";
-import { CreateIcoSphere } from "@babylonjs/core/Meshes/Builders/icoSphereBuilder";
+import { debugChanges } from "./utils/debug";
+import { queueEvent } from "./utils/events";
 
+import { sceneCtx, type SceneCtx } from "./context";
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
@@ -63,18 +58,16 @@ export class MyViewerElement extends ReactiveElement {
         render(innerhtml, this.renderRoot);
     }
 
-    _needresize: boolean = false;
     #resizingObs!: ResizeObserver;
+    _needresize: boolean = true;
 
-    @state()
-    _visible: boolean = true;
     #visibilityObs!: IntersectionObserver;
-
+    @state() _visible: boolean = true;
 
     constructor() {
         super();
         this.#resizingObs = new ResizeObserver(
-            () => { this._needresize = false; }
+            () => { this._needresize = true; }
         );
         this.#visibilityObs = new IntersectionObserver(
             (entries) => { this._visible = entries[0].isIntersecting; },
@@ -85,7 +78,7 @@ export class MyViewerElement extends ReactiveElement {
     override connectedCallback(): void {
         super.connectedCallback();
         this.#renderHTML()
-        this.#setup();
+        this.#init();
         this.#resizingObs.observe(this);
         this.#visibilityObs.observe(this);
     }
@@ -97,17 +90,10 @@ export class MyViewerElement extends ReactiveElement {
         super.disconnectedCallback();
     }
 
-    #setup() {
+    #init() {
         this.engine = new Engine(this.canvas, undefined, ENGOPTIONS);
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
-
-        let dumb = CreateIcoSphere("#dumb", { subdivisions: 64 }, this.scene); // FIXME
-        Tags.AddTagsTo(dumb, "model");
-        let dumbmat = new PBRMetallicRoughnessMaterial("default", this.scene);
-        dumbmat.metallic = 1;
-        dumbmat.roughness = 0;
-        dumb.material = dumbmat;
 
         this.updateCtx();
     }
@@ -118,20 +104,20 @@ export class MyViewerElement extends ReactiveElement {
     }
 
     #render = () => {
-        if (!this._needresize) { this.engine.resize(); this._needresize = true; }
+        if (this._needresize) { this.engine.resize(); this._needresize = false; }
         this.scene.render();
     }
+
+    @state() _ctx_dirty = false;
 
     updateCtx() {
         this.ctx = {
             scene: this.scene,
-            bounds: Mesh.MinMax(this.scene.getMeshesByTags('model')),
+            bounds: this.scene.getWorldExtends((m: AbstractMesh) => Tags.MatchesQuery(m, "model")),
         }
-        bubbleEvent(this, 'scene-updated', this.ctx);
     }
 
     override update(changes: PropertyValues) {
-        super.update(changes);
         debugChanges(this, 'update', changes);
         if (changes.has('_visible')) {
             if (this._visible) {
@@ -140,5 +126,15 @@ export class MyViewerElement extends ReactiveElement {
                 this.engine.stopRenderLoop(this.#render);
             }
         }
+        if (changes.has('_ctx_dirty') && this._ctx_dirty) {
+            this._ctx_dirty = false;
+            this.updateCtx();
+        }
+        super.update(changes);
+    }
+
+    override updated(changes: PropertyValues) {
+        super.updated(changes);
+        if (changes.has('_ctx_dirty')) queueEvent(this, 'scene-updated', this.ctx);
     }
 }

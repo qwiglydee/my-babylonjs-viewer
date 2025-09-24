@@ -1,20 +1,19 @@
-import { ReactiveElement } from "lit";
+import { consume } from "@lit/context";
 import type { PropertyValues } from "lit";
+import { ReactiveElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { consume} from "@lit/context";
 
-import { debug, debugChanges } from "./utils/debug";
-
-import { envCtx, sceneCtx, type EnvCtx, type SceneCtx } from "./context";
-import { assert, assertNonNull } from "./utils/asserts";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
-import type { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
-import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { BackgroundMaterial } from "@babylonjs/core/Materials/Background/backgroundMaterial";
-import { Color3, Vector3 } from "@babylonjs/core/Maths/math";
-import type { Nullable } from "@babylonjs/core/types";
+import type { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
+import { Color3, Vector3 } from "@babylonjs/core/Maths/math";
+import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Tags } from "@babylonjs/core/Misc/tags";
+import type { Nullable } from "@babylonjs/core/types";
+
+import { assert } from "./utils/asserts";
+import { envCtx, sceneCtx, type EnvCtx, type SceneCtx } from "./context";
 
 
 @customElement('my-sky')
@@ -82,12 +81,10 @@ export class MyStubElem extends ReactiveElement {
 
     
     override update(changes: PropertyValues) {
-        super.update(changes);
-        debugChanges(this, 'update', changes);
-
         if (changes.has('env')) this.#initTexture();
         if (changes.has('size')) this._mesh.scaling = Vector3.One().scale(this.size);
         if (changes.has('blurring')) this._material.reflectionBlur = this.blurring;
         if (changes.has('intensity') && this._texture) this._texture.level = this.intensity;
+        super.update(changes);
     }
 }

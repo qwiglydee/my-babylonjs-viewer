@@ -1,8 +1,9 @@
 import { createContext } from "@lit/context";
 
 import type { Scene } from "@babylonjs/core/scene";
-import type { Vector3 } from "@babylonjs/core/Maths/math";
 import type { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
+import type { Vector3 } from "@babylonjs/core/Maths/math";
+
 
 export interface Bounds {
     min: Vector3;
@@ -22,3 +23,9 @@ export interface EnvCtx {
 }
 
 export const envCtx = createContext<EnvCtx>(Symbol('babylon-env'));
+
+export interface ModelDetail {
+    enabled: boolean,
+}
+
+export type ModelEvent = CustomEvent<ModelDetail>;

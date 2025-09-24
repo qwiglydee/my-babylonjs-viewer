@@ -9,7 +9,6 @@ import type { Nullable } from "@babylonjs/core/types";
 import { assert } from "./utils/asserts";
 
 import { envCtx, sceneCtx, type EnvCtx, type SceneCtx } from "./context";
-import { debugChanges } from "./utils/debug";
 
 const DEFAULT_ENV = new URL("./assets/default.env?inline", import.meta.url);
 
@@ -62,7 +61,6 @@ export class MyEnvElem extends ReactiveElement {
     
     override update(changes: PropertyValues) {
         super.update(changes);
-        debugChanges(this, 'update', changes);
         if (!this._texture) return;
         if (changes.has('intensity')) this._texture.level = this.intensity;
         if (changes.has('rotation')) this._texture.rotationY = Tools.ToRadians(this.rotation);
