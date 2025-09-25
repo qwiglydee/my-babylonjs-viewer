@@ -6,18 +6,16 @@ import { customElement, query, state } from "lit/decorators.js";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import type { EngineOptions } from "@babylonjs/core/Engines/thinEngine";
 import { Color4 } from "@babylonjs/core/Maths/math.color";
-import { Tags } from "@babylonjs/core/Misc/tags";
 import { Scene, type SceneOptions } from "@babylonjs/core/scene";
-
-import "@babylonjs/core/Rendering/boundingBoxRenderer";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Vector3 } from "@babylonjs/core/Maths/math";
 
 import { debugChanges } from "./utils/debug";
 import { queueEvent } from "./utils/events";
 
-import { sceneCtx, type SceneCtx } from "./context";
-import { LoadAssetsAsync } from "./loading";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
-import { Vector3 } from "@babylonjs/core/Maths/math";
+import { assetsCtx, sceneCtx, type SceneCtx } from "./context";
+import { MyAssetManager } from "./assetmgr";
+import { DefaultLoadingScreen } from "@babylonjs/core/Loading/loadingScreen";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
@@ -42,6 +40,9 @@ export class MyViewerElement extends ReactiveElement {
 
     @provide({ context: sceneCtx })
     ctx!: SceneCtx;
+
+    @provide({ context: assetsCtx })
+    assetMgr!: MyAssetManager;
 
     static override styles = css`
         :host {
@@ -100,9 +101,15 @@ export class MyViewerElement extends ReactiveElement {
 
     #init() {
         this.engine = new Engine(this.canvas, undefined, ENGOPTIONS);
+        this.engine.loadingScreen = new DefaultLoadingScreen(this.canvas, "", "#202020");
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
-
+        this.assetMgr = new MyAssetManager(this.scene);
+        this.assetMgr.onAttachingObservable.add(() => this._ctx_dirty = true);
+        this.assetMgr.onProgressObservable.add((count: number) => {
+            this.engine.loadingUIText = `Loading ${count}`;
+            if (count) this.engine.displayLoadingUI(); else this.engine.hideLoadingUI();
+        });
         this.updateCtx();
     }
 
@@ -123,6 +130,7 @@ export class MyViewerElement extends ReactiveElement {
         this.ctx = {
             scene: this.scene,
             bounds: meshes.length ? Mesh.MinMax(meshes) : NULLBOUNDS,
+            slots: this.scene.getTransformNodesByTags('slot').map(n => n.name),
         }
     }
 
@@ -152,12 +160,9 @@ export class MyViewerElement extends ReactiveElement {
     __clear() {
         this.scene.getMeshesByTags('model').forEach(m => this.scene.removeMesh(m));
     }
-    async __load(url: string) {
-        const assets = await LoadAssetsAsync(this.scene, url);
-        assets.meshes.forEach(m => {
-            Tags.AddTagsTo(m, "model");
-            this.scene.addMesh(m);
-        });
-        this.updateCtx();
+    async __load(url: string, node?: string) {
+        const model = await this.assetMgr.loadModel(url);
+        this.assetMgr.attachModel(model, node ? this.scene.getTransformNodeByName(node) : null);
+        return model;
     }
 }

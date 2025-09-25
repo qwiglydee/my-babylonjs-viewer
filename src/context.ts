@@ -4,6 +4,8 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import type { Vector3 } from "@babylonjs/core/Maths/math";
 
+import type { MyAssetManager } from "./assetmgr";
+
 
 export interface Bounds {
     min: Vector3;
@@ -13,10 +15,13 @@ export interface Bounds {
 export interface SceneCtx {
     scene: Scene;
     bounds: Bounds;
+    slots: string[];
+    skins: string[];
 }
 
 export const sceneCtx = createContext<SceneCtx>(Symbol('babylon-scene'));
 
+export const assetsCtx = createContext<MyAssetManager>(Symbol('babylon-loader'));
 
 export interface EnvCtx {
     texture: CubeTexture;
