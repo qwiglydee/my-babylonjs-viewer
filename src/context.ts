@@ -16,7 +16,6 @@ export interface SceneCtx {
     scene: Scene;
     bounds: Bounds;
     slots: string[];
-    skins: string[];
 }
 
 export const sceneCtx = createContext<SceneCtx>(Symbol('babylon-scene'));

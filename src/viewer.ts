@@ -10,8 +10,8 @@ import { Scene, type SceneOptions } from "@babylonjs/core/scene";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Vector3 } from "@babylonjs/core/Maths/math";
 
-import { debugChanges } from "./utils/debug";
-import { queueEvent } from "./utils/events";
+import { debug, debugChanges } from "./utils/debug";
+import { bubbleEvent } from "./utils/events";
 
 import { assetsCtx, sceneCtx, type SceneCtx } from "./context";
 import { MyAssetManager } from "./assetmgr";
@@ -68,10 +68,7 @@ export class MyViewerElement extends ReactiveElement {
     }
 
     #resizingObs!: ResizeObserver;
-    _needresize: boolean = true;
-
     #visibilityObs!: IntersectionObserver;
-    @state() _visible: boolean = true;
 
     constructor() {
         super();
@@ -79,7 +76,10 @@ export class MyViewerElement extends ReactiveElement {
             () => { this._needresize = true; }
         );
         this.#visibilityObs = new IntersectionObserver(
-            (entries) => { this._visible = entries[0].isIntersecting; },
+            (entries) => {
+                const visible = entries[0].isIntersecting; 
+                if (visible) this.engine.runRenderLoop(this.#render); else this.engine.stopRenderLoop(this.#render);
+            },
             { threshold: 0.5 }
         );
     }
@@ -105,7 +105,7 @@ export class MyViewerElement extends ReactiveElement {
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
         this.assetMgr = new MyAssetManager(this.scene);
-        this.assetMgr.onAttachingObservable.add(() => this._ctx_dirty = true);
+        this.assetMgr.onAttachingObservable.add(() => this.updateCtx());
         this.assetMgr.onProgressObservable.add((count: number) => {
             this.engine.loadingUIText = `Loading ${count}`;
             if (count) this.engine.displayLoadingUI(); else this.engine.hideLoadingUI();
@@ -118,13 +118,14 @@ export class MyViewerElement extends ReactiveElement {
         this.engine.dispose();
     }
 
+    _needresize: boolean = true;
+
     #render = () => {
         if (this._needresize) { this.engine.resize(); this._needresize = false; }
         this.scene.render();
     }
 
-    @state() _ctx_dirty = false;
-
+    _delayedEvent: any;
     updateCtx() {
         const meshes = this.scene.getMeshesByTags('model');
         this.ctx = {
@@ -132,27 +133,10 @@ export class MyViewerElement extends ReactiveElement {
             bounds: meshes.length ? Mesh.MinMax(meshes) : NULLBOUNDS,
             slots: this.scene.getTransformNodesByTags('slot').map(n => n.name),
         }
-    }
-
-    override update(changes: PropertyValues) {
-        debugChanges(this, 'update', changes);
-        if (changes.has('_visible')) {
-            if (this._visible) {
-                this.engine.runRenderLoop(this.#render);
-            } else {
-                this.engine.stopRenderLoop(this.#render);
-            }
-        }
-        if (changes.has('_ctx_dirty') && this._ctx_dirty) {
-            this._ctx_dirty = false;
-            this.updateCtx();
-        }
-        super.update(changes);
-    }
-
-    override updated(changes: PropertyValues) {
-        super.updated(changes);
-        if (changes.has('_ctx_dirty')) queueEvent(this, 'scene-updated', this.ctx);
+        debug(this, "== CTX ==", this.ctx);
+        // batch all cascading changes
+        clearTimeout(this._delayedEvent);
+        this._delayedEvent = setTimeout(() => bubbleEvent(this, "scene-updated", this.ctx), 17);
     }
 
     // testing
