@@ -105,7 +105,7 @@ export class MyViewerElement extends ReactiveElement {
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
         this.assetMgr = new MyAssetManager(this.scene);
-        this.assetMgr.onAttachingObservable.add(() => this.updateCtx());
+        this.assetMgr.onAttachingObservable.add(() => queueMicrotask(() => this.updateCtx()));
         this.assetMgr.onProgressObservable.add((count: number) => {
             this.engine.loadingUIText = `Loading ${count}`;
             if (count) this.engine.displayLoadingUI(); else this.engine.hideLoadingUI();
@@ -133,20 +133,9 @@ export class MyViewerElement extends ReactiveElement {
             bounds: meshes.length ? Mesh.MinMax(meshes) : NULLBOUNDS,
             slots: this.scene.getTransformNodesByTags('slot').map(n => n.name),
         }
-        debug(this, "== CTX ==", this.ctx);
+        // debug(this, "== CTX ==", this.ctx);
         // batch all cascading changes
         clearTimeout(this._delayedEvent);
         this._delayedEvent = setTimeout(() => bubbleEvent(this, "scene-updated", this.ctx), 17);
-    }
-
-    // testing
-
-    __clear() {
-        this.scene.getMeshesByTags('model').forEach(m => this.scene.removeMesh(m));
-    }
-    async __load(url: string, node?: string) {
-        const model = await this.assetMgr.loadModel(url);
-        this.assetMgr.attachModel(model, node ? this.scene.getTransformNodeByName(node) : null);
-        return model;
     }
 }

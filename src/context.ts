@@ -30,6 +30,7 @@ export const envCtx = createContext<EnvCtx>(Symbol('babylon-env'));
 
 export interface ModelDetail {
     enabled: boolean,
+    target?: string,
 }
 
 export type ModelEvent = CustomEvent<ModelDetail>;

@@ -36,8 +36,38 @@
             <my-sky intensity="0.25"></my-sky>
             <my-ground></my-ground>
         </my-environ>
-        <my-stub src=""></my-stub>
+        <my-model class="base" id="suzanne" src="assets/monkey.glb"></my-model>
+        <my-model class="base" id="plane2" src="assets/plane2.glb"></my-model>
+        <my-model class="base" id="plane3" src="assets/plane3.glb"></my-model>
+        <my-model class="part" id="gear1" src="assets/plane-gear1.glb" target="gear"></my-model>
+        <my-model class="part" id="gear2" src="assets/plane-gear2.glb" target="gear"></my-model>
+        <my-model class="part" id="pilot" src="assets/monkey.glb" target="pilot"></my-model>
     </my-viewer>
+    <div>
+        <section class="border rounded-3 mb-3 p-3">
+            <h5>Модель</h5>
+            <select name="model" class="form-select">
+                <option value="suzanne">suzanne</option>
+                <option value="plane2">plane2</option>
+                <option value="plane3">plane3</option>
+            </select>
+        </section>
+        <section id="menu-components" class="border rounded-3 rounded-3 mb-3 p-3">
+            <h5>Комплектация</h5>
+            <div class="form-check">
+                <input id="check-g1" type="radio" name="item" value="gear1" class="form-check-input">
+                <label for="check-g1" class="form-check-label">Шасси: летнее</label>
+            </div>
+            <div class="form-check">
+                <input id="check-g2" type="radio" name="item" value="gear2" class="form-check-input">
+                <label for="check-g2" class="form-check-label">Шасси: зимнее</label>
+            </div>
+            <div class="form-check">
+                <input id="check-p" type="checkbox" name="item" value="pilot" class="form-check-input">
+                <label for="check-p" class="form-check-label">Пилот</label>
+            </div>
+        </section>
+    </div>
 </body>
 
 <script>
@@ -45,10 +75,43 @@
         viewer: document.querySelector("my-viewer"),
         camera: document.querySelector('my-camera'),
         environ: document.querySelector('my-environ'),
+        basemodels: document.querySelectorAll('my-model.base'),
+        partmodels: document.querySelectorAll('my-model.part'),
     }
 
-    my.viewer.addEventListener('scene-updated', function(e) {
+    var ui = {
+        model: document.querySelector("[name=model]"),
+        components: document.querySelector("#menu-components")
+    }
+
+    ui.model.addEventListener('change', function (e) {
+        let input = e.target;
+        let item = document.getElementById(input.value);
+        my.basemodels.forEach(m => m.selected = false);
+        item.selected = true;
+    });
+
+    ui.components.addEventListener('change', function (e) {
+        let input = e.target;
+        let item = document.getElementById(input.value);
+        if (item.target && input.checked) document.querySelectorAll(`[target=${item.target}]`).forEach(it => it.selected = false);
+        item.selected = input.checked;
+    });
+
+    my.viewer.addEventListener('model-updated', function (e) {
+        console.debug(e.type, e.target.id, e.detail);
+        let item = e.target;
+        if (item.classList.contains('base') && e.detail.enabled) ui.model.value = item.id;
+    });
+
+    my.viewer.addEventListener('scene-updated', function (e) {
         console.debug(e.type, e.detail);
+        my.partmodels.forEach(item => {
+            let input = ui.components.querySelector(`[value=${item.id}]`);
+            input.disabled = item.disabled;
+            input.checked = item.selected;
+            // input.closest(".form-check").hidden = input.disabled;
+        });
     });
 </script>
 

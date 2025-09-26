@@ -105,14 +105,25 @@ export class MyAssetManager {
     }
 
     attachModel(model: Model, node: Nullable<TransformNode> = null) {
+        console.debug("attaching", model.url, "->", node?.id);
         model.assets.addAllToScene(); // expecting no effect if already added
         model.root.parent = node;
         this.onAttachingObservable.notifyObservers({ model, attached: true });
     }
 
     detachModel(model: Model) {
+        console.debug("detaching", model.url);
         model.root.parent = null;
         model.assets.removeAllFromScene();
         this.onAttachingObservable.notifyObservers({ model, attached: false });
+    }
+
+    orphanAttachments(parent: Model) {
+        parent.assets.getTransformNodesByTags('slot').forEach(n => {
+            n.getChildren().filter(n => !n.id.startsWith(parent.url)).forEach(n => {
+                console.debug("orphaning", n.id, " -> ", n.parent?.id);
+                n.parent = null;
+            })
+        });
     }
 }
