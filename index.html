@@ -41,6 +41,8 @@
         <my-model class="base" id="plane3" src="assets/plane3.glb"></my-model>
         <my-model class="part" id="gear1" src="assets/plane-gear1.glb" target="gear" selected></my-model>
         <my-model class="part" id="gear2" src="assets/plane-gear2.glb" target="gear"></my-model>
+        <my-part class="part" id="hood" ref="hood"></my-part>
+        <my-part class="part" id="tail" ref="tail.002"></my-part>
     </my-viewer>
     <div>
         <section class="border rounded-3 mb-3 p-3">
@@ -61,6 +63,14 @@
                 <input id="check-g2" type="radio" name="item" value="gear2" class="form-check-input">
                 <label for="check-g2" class="form-check-label">Шасси: зимнее</label>
             </div>
+            <div class="form-check">
+                <input id="check-p1" type="checkbox" name="item" value="hood" class="form-check-input">
+                <label for="check-p1" class="form-check-label">Кабина</label>
+            </div>
+            <div class="form-check">
+                <input id="check-p2" type="checkbox" name="item" value="tail" class="form-check-input">
+                <label for="check-p2" class="form-check-label">Хвостик</label>
+            </div>
         </section>
     </div>
 </body>
@@ -72,6 +82,7 @@
         environ: document.querySelector('my-environ'),
         basemodels: document.querySelectorAll('my-model.base'),
         partmodels: document.querySelectorAll('my-model.part'),
+        partrefs: document.querySelectorAll('my-part.part'),
     }
 
     var ui = {
@@ -96,7 +107,15 @@
     my.viewer.addEventListener('model-updated', function (e) {
         console.debug(e.type, e.target.id, e.detail);
         let item = e.target;
-        if (item.classList.contains('base') && e.detail.enabled) ui.model.value = item.id;
+        if (item.classList.contains('base') && item.enabled) ui.model.value = item.id;
+    });
+
+    my.viewer.addEventListener('part-updated', function (e) {
+        console.debug(e.type, e.target.id, e.detail);
+        let item = e.target;
+        let input = ui.components.querySelector(`[value=${item.id}]`);
+        input.disabled = item.disabled;
+        input.checked = item.selected;
     });
 
     my.viewer.addEventListener('scene-updated', function (e) {

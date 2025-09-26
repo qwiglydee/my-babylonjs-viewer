@@ -5,3 +5,4 @@ import "./environ";
 import "./sky";
 import "./ground";
 import "./model";
+import "./part";

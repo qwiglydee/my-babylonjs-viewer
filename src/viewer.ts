@@ -84,6 +84,8 @@ export class MyViewerElement extends ReactiveElement {
             },
             { threshold: 0.5 }
         );
+        this.addEventListener('model-updated', () => queueMicrotask(() => this.updateCtx()));
+        this.addEventListener('part-updated', () => queueMicrotask(() => this.updateCtx()));
     }
 
     override connectedCallback(): void {
@@ -107,7 +109,7 @@ export class MyViewerElement extends ReactiveElement {
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
         this.assetMgr = new MyAssetManager(this.scene);
-        this.assetMgr.onAttachingObservable.add(() => queueMicrotask(() => this.updateCtx()));
+        // this.assetMgr.onAttachingObservable.add(() => queueMicrotask(() => this.updateCtx()));
         this.assetMgr.onProgressObservable.add((count: number) => {
             this.loadingScreen.loadingUIText = `Loading ${count}...`;
             if (count) this.loadingScreen.displayLoadingUI(); else this.loadingScreen.hideLoadingUI();
