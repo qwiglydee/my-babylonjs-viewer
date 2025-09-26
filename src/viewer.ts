@@ -1,7 +1,6 @@
 import { provide } from "@lit/context";
-import type { PropertyValues } from "lit";
 import { css, html, ReactiveElement, render } from "lit";
-import { customElement, query, state } from "lit/decorators.js";
+import { customElement, query } from "lit/decorators.js";
 
 import { Engine } from "@babylonjs/core/Engines/engine";
 import type { EngineOptions } from "@babylonjs/core/Engines/thinEngine";
@@ -10,12 +9,11 @@ import { Scene, type SceneOptions } from "@babylonjs/core/scene";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Vector3 } from "@babylonjs/core/Maths/math";
 
-import { debug, debugChanges } from "./utils/debug";
 import { bubbleEvent } from "./utils/events";
 
 import { assetsCtx, sceneCtx, type SceneCtx } from "./context";
+import { MyLoadingScreen } from "./screen";
 import { MyAssetManager } from "./assetmgr";
-import { DefaultLoadingScreen } from "@babylonjs/core/Loading/loadingScreen";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
@@ -34,6 +32,9 @@ const NULLBOUNDS = {
 export class MyViewerElement extends ReactiveElement {
     @query("canvas")
     canvas!: HTMLCanvasElement;
+
+    @query('my-loading-screen')
+    loadingScreen!: MyLoadingScreen;
 
     engine!: Engine;
     scene!: Scene;
@@ -63,6 +64,7 @@ export class MyViewerElement extends ReactiveElement {
     #renderHTML() {
         const innerhtml = html`
             <canvas></canvas>
+            <my-loading-screen></my-loading-screen>
         `;
         render(innerhtml, this.renderRoot);
     }
@@ -101,14 +103,14 @@ export class MyViewerElement extends ReactiveElement {
 
     #init() {
         this.engine = new Engine(this.canvas, undefined, ENGOPTIONS);
-        this.engine.loadingScreen = new DefaultLoadingScreen(this.canvas, "", "#202020");
+        this.engine.loadingScreen = this.loadingScreen;
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
         this.assetMgr = new MyAssetManager(this.scene);
         this.assetMgr.onAttachingObservable.add(() => queueMicrotask(() => this.updateCtx()));
         this.assetMgr.onProgressObservable.add((count: number) => {
-            this.engine.loadingUIText = `Loading ${count}`;
-            if (count) this.engine.displayLoadingUI(); else this.engine.hideLoadingUI();
+            this.loadingScreen.loadingUIText = `Loading ${count}...`;
+            if (count) this.loadingScreen.displayLoadingUI(); else this.loadingScreen.hideLoadingUI();
         });
         this.updateCtx();
     }

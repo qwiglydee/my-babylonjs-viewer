@@ -37,11 +37,10 @@
             <my-ground></my-ground>
         </my-environ>
         <my-model class="base" id="suzanne" src="assets/monkey.glb"></my-model>
-        <my-model class="base" id="plane2" src="assets/plane2.glb"></my-model>
+        <my-model class="base" id="plane2" src="assets/plane2.glb" selected></my-model>
         <my-model class="base" id="plane3" src="assets/plane3.glb"></my-model>
-        <my-model class="part" id="gear1" src="assets/plane-gear1.glb" target="gear"></my-model>
+        <my-model class="part" id="gear1" src="assets/plane-gear1.glb" target="gear" selected></my-model>
         <my-model class="part" id="gear2" src="assets/plane-gear2.glb" target="gear"></my-model>
-        <my-model class="part" id="pilot" src="assets/monkey.glb" target="pilot"></my-model>
     </my-viewer>
     <div>
         <section class="border rounded-3 mb-3 p-3">
@@ -61,10 +60,6 @@
             <div class="form-check">
                 <input id="check-g2" type="radio" name="item" value="gear2" class="form-check-input">
                 <label for="check-g2" class="form-check-label">Шасси: зимнее</label>
-            </div>
-            <div class="form-check">
-                <input id="check-p" type="checkbox" name="item" value="pilot" class="form-check-input">
-                <label for="check-p" class="form-check-label">Пилот</label>
             </div>
         </section>
     </div>
