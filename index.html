@@ -37,7 +37,7 @@
             <my-ground></my-ground>
         </my-environ>
         <my-model class="base" id="suzanne" src="assets/monkey.glb"></my-model>
-        <my-model class="base" id="plane2" src="assets/plane2.glb" selected></my-model>
+        <my-model class="base" id="plane2" src="assets/plane2.glb" selected skin="fighter"></my-model>
         <my-model class="base" id="plane3" src="assets/plane3.glb"></my-model>
         <my-model class="part" id="gear1" src="assets/plane-gear1.glb" target="gear" selected></my-model>
         <my-model class="part" id="gear2" src="assets/plane-gear2.glb" target="gear"></my-model>
@@ -53,7 +53,7 @@
                 <option value="plane3">plane3</option>
             </select>
         </section>
-        <section id="menu-components" class="border rounded-3 rounded-3 mb-3 p-3">
+        <section id="menu-items" class="border rounded-3 rounded-3 mb-3 p-3">
             <h5>Комплектация</h5>
             <div class="form-check">
                 <input id="check-g1" type="radio" name="item" value="gear1" class="form-check-input">
@@ -72,6 +72,17 @@
                 <label for="check-p2" class="form-check-label">Хвостик</label>
             </div>
         </section>
+        <section id="menu-skins" class="border rounded-3 rounded-3 mb-3 p-3">
+            <h5>Расцветка</h5>
+            <div class="form-check">
+                <input id="check-s1" type="radio" name="skin" value="acrobatic" class="form-check-input">
+                <label for="check-s1" class="form-check-label">Акробатическая</label>
+            </div>
+            <div class="form-check">
+                <input id="check-s2" type="radio" name="skin" value="fighter" class="form-check-input">
+                <label for="check-s2" class="form-check-label">Боевая</label>
+            </div>
+        </section>
     </div>
 </body>
 
@@ -87,7 +98,8 @@
 
     var ui = {
         model: document.querySelector("[name=model]"),
-        components: document.querySelector("#menu-components")
+        items: document.querySelector("#menu-items"),
+        skins: document.querySelector("#menu-skins")
     }
 
     ui.model.addEventListener('change', function (e) {
@@ -97,11 +109,17 @@
         item.selected = true;
     });
 
-    ui.components.addEventListener('change', function (e) {
+    ui.items.addEventListener('change', function (e) {
         let input = e.target;
         let item = document.getElementById(input.value);
         if (item.target && input.checked) document.querySelectorAll(`[target=${item.target}]`).forEach(it => it.selected = false);
         item.selected = input.checked;
+    });
+
+    ui.skins.addEventListener('change', function (e) {
+        let input = e.target;
+        my.basemodels.forEach(m => m.skin = input.value);
+        my.partmodels.forEach(m => m.skin = input.value);
     });
 
     my.viewer.addEventListener('model-updated', function (e) {
@@ -113,7 +131,7 @@
     my.viewer.addEventListener('part-updated', function (e) {
         console.debug(e.type, e.target.id, e.detail);
         let item = e.target;
-        let input = ui.components.querySelector(`[value=${item.id}]`);
+        let input = ui.items.querySelector(`[value=${item.id}]`);
         input.disabled = item.disabled;
         input.checked = item.selected;
     });
@@ -121,7 +139,7 @@
     my.viewer.addEventListener('scene-updated', function (e) {
         console.debug(e.type, e.detail);
         my.partmodels.forEach(item => {
-            let input = ui.components.querySelector(`[value=${item.id}]`);
+            let input = ui.items.querySelector(`[value=${item.id}]`);
             input.disabled = item.disabled;
             input.checked = item.selected;
             // input.closest(".form-check").hidden = input.disabled;

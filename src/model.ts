@@ -37,6 +37,9 @@ export class MyModelElem extends ReactiveElement {
         return !this.disabled && this.selected;
     }
 
+    @property()
+    skin: Nullable<string> = null;
+
     override connectedCallback(): void {
         super.connectedCallback();
         assert(this.hasAttribute('src'), `Property ${this.tagName}.src required`);
@@ -81,6 +84,16 @@ export class MyModelElem extends ReactiveElement {
         }
     }
 
+    #reskin() {
+        assertNonNull(this._model);
+        if (this.skin) {
+            this._model.matCtrl.selectedVariant = this.skin;
+        } else {
+            this._model.matCtrl.selectedVariant = this._model.matCtrl.variants[0];
+        }
+    }
+
+
     override update(changes: PropertyValues) {
         if(changes.has('ctx') || changes.has('target')) {
             this.disabled = !(this.target == null || this.ctx.slots.includes(this.target));
@@ -93,8 +106,13 @@ export class MyModelElem extends ReactiveElement {
         if (!this._loaded && this.enabled) this.#load();
 
         if (this._loaded) {
-            if (changes.has('_loaded')) this.#attach();
-            if (changes.has('selected') || changes.has('disabled') || changes.has('_target')) this.#attach();
+            if (changes.has('_loaded')) {
+                this.#attach();
+                this.#reskin();
+            } else {
+                if (changes.has('selected') || changes.has('disabled') || changes.has('_target')) this.#attach();
+                if (changes.has('skin')) this.#reskin();
+            }
         }
 
         super.update(changes);
