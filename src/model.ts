@@ -9,7 +9,7 @@ import { assetsCtx, sceneCtx, type SceneCtx } from "./context";
 import type { Model, MyAssetManager } from "./assetmgr";
 import { assert, assertNonNull } from "./utils/asserts";
 import { queueEvent } from "./utils/events";
-import { debug, debugChanges } from "./utils/debug";
+// import { debug, debugChanges } from "./utils/debug";
 
 
 @customElement('my-model')
@@ -25,7 +25,7 @@ export class MyModelElem extends ReactiveElement {
     get src(): string { return this._src!; }
 
     @property()
-    target: Nullable<string> = null;
+    anchor: Nullable<string> = null;
 
     @property({ type: Boolean, reflect: true })
     selected = false;
@@ -70,7 +70,7 @@ export class MyModelElem extends ReactiveElement {
     }
 
     @state() _attached: boolean = false;
-    @state() _target: Nullable<TransformNode> = null;
+    @state() _anchor: Nullable<TransformNode> = null;
 
     #attach() {
         assertNonNull(this._model);
@@ -79,7 +79,7 @@ export class MyModelElem extends ReactiveElement {
             this.mgr.detachModel(this._model);
             this._attached = false;
         } else {
-            this.mgr.attachModel(this._model, this._target);
+            this.mgr.attachModel(this._model, this._anchor);
             this._attached = true;
         }
     }
@@ -95,9 +95,9 @@ export class MyModelElem extends ReactiveElement {
 
 
     override update(changes: PropertyValues) {
-        if(changes.has('ctx') || changes.has('target')) {
-            this.disabled = !(this.target == null || this.ctx.slots.includes(this.target));
-            this._target = this.target ? this.ctx.scene.getTransformNodeByName(this.target) : null;
+        if(changes.has('ctx') || changes.has('anchor')) {
+            this.disabled = !(this.anchor == null || this.ctx.slots.includes(this.anchor));
+            this._anchor = this.anchor ? this.ctx.scene.getTransformNodeByName(this.anchor) : null;
             // debug(this, 'validated', { disabled: this.disabled, target: this._target?.id });
         }
 
@@ -110,7 +110,7 @@ export class MyModelElem extends ReactiveElement {
                 this.#attach();
                 this.#reskin();
             } else {
-                if (changes.has('selected') || changes.has('disabled') || changes.has('_target')) this.#attach();
+                if (changes.has('selected') || changes.has('disabled') || changes.has('_anchor')) this.#attach();
                 if (changes.has('skin')) this.#reskin();
             }
         }
@@ -121,8 +121,8 @@ export class MyModelElem extends ReactiveElement {
     protected override updated(changes: PropertyValues): void {
         super.updated(changes);
         if (changes.has('_loaded') && changes.get('_loaded') === undefined) return; // skip initial update
-        if (changes.has('_attached') || (this._attached && changes.has('_target'))) {
-            queueEvent(this, 'model-updated', { enabled: this.enabled && this._attached, target: this._target?.name });
+        if (changes.has('_attached') || (this._attached && changes.has('_anchor'))) {
+            queueEvent(this, 'model-updated', { enabled: this.enabled && this._attached, target: this._anchor?.name });
         }
     }
 }

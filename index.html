@@ -31,16 +31,17 @@
 
 <body>
     <my-viewer>
-        <my-camera autospin zoomFactor="0.6"></my-camera>
+        <my-camera autospin></my-camera>
         <my-environ>
             <my-sky intensity="0.25"></my-sky>
             <my-ground></my-ground>
         </my-environ>
-        <my-model class="base" id="suzanne" src="assets/monkey.glb"></my-model>
-        <my-model class="base" id="plane2" src="assets/plane2.glb" selected skin="fighter"></my-model>
+        <!-- <my-stub></my-stub> -->
+        <my-model class="base" id="suzanne" src="assets/monkey.glb" selected></my-model>
+        <my-model class="base" id="plane2" src="assets/plane2.glb"></my-model>
         <my-model class="base" id="plane3" src="assets/plane3.glb"></my-model>
-        <my-model class="part" id="gear1" src="assets/plane-gear1.glb" target="gear" selected></my-model>
-        <my-model class="part" id="gear2" src="assets/plane-gear2.glb" target="gear"></my-model>
+        <my-model class="part" id="gear1" src="assets/plane-gear1.glb" anchor="gear" selected></my-model>
+        <my-model class="part" id="gear2" src="assets/plane-gear2.glb" anchor="gear"></my-model>
         <my-part class="part" id="hood" ref="hood"></my-part>
         <my-part class="part" id="tail" ref="tail.002"></my-part>
     </my-viewer>
@@ -112,7 +113,7 @@
     ui.items.addEventListener('change', function (e) {
         let input = e.target;
         let item = document.getElementById(input.value);
-        if (item.target && input.checked) document.querySelectorAll(`[target=${item.target}]`).forEach(it => it.selected = false);
+        document.querySelectorAll(`[anchor=${item.anchor}]`).forEach(it => it.selected = false);
         item.selected = input.checked;
     });
 

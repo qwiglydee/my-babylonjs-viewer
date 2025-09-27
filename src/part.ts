@@ -6,7 +6,7 @@ import { consume} from "@lit/context";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Nullable } from "@babylonjs/core/types";
 
-import { debug, debugChanges } from "./utils/debug";
+// import { debug, debugChanges } from "./utils/debug";
 
 import { sceneCtx, type SceneCtx } from "./context";
 import { assert, assertNonNull } from "./utils/asserts";
@@ -56,10 +56,7 @@ export class MyPartElem extends ReactiveElement {
         if(changes.has('ctx')) {
             this._target = this.ctx.scene.getMeshByName(this._ref) ?? null;
             this.disabled = (this._target === null);
-            debug(this, 'validated', { disabled: this.disabled, target: this._target?.id });
         }
-
-        debugChanges(this, 'updating', changes);
 
         if (this._target) {
             if (changes.has('selected') || changes.has('disabled') || changes.has('_target')) this.#toggle();

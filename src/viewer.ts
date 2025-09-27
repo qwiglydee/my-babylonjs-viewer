@@ -14,6 +14,7 @@ import { bubbleEvent } from "./utils/events";
 import { assetsCtx, sceneCtx, type SceneCtx } from "./context";
 import { MyLoadingScreen } from "./screen";
 import { MyAssetManager } from "./assetmgr";
+import { debug } from "./utils/debug";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
@@ -64,7 +65,7 @@ export class MyViewerElement extends ReactiveElement {
     #renderHTML() {
         const innerhtml = html`
             <canvas></canvas>
-            <my-loading-screen></my-loading-screen>
+            <my-loading-screen hidden></my-loading-screen>
         `;
         render(innerhtml, this.renderRoot);
     }
@@ -109,7 +110,6 @@ export class MyViewerElement extends ReactiveElement {
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
         this.assetMgr = new MyAssetManager(this.scene);
-        // this.assetMgr.onAttachingObservable.add(() => queueMicrotask(() => this.updateCtx()));
         this.assetMgr.onProgressObservable.add((count: number) => {
             this.loadingScreen.loadingUIText = `Loading ${count}...`;
             if (count) this.loadingScreen.displayLoadingUI(); else this.loadingScreen.hideLoadingUI();
@@ -137,7 +137,7 @@ export class MyViewerElement extends ReactiveElement {
             bounds: meshes.length ? Mesh.MinMax(meshes) : NULLBOUNDS,
             slots: this.scene.getTransformNodesByTags('slot').map(n => n.name),
         }
-        // debug(this, "== CTX ==", this.ctx);
+        debug(this, "CTX ====", {...this.ctx});
         // batch all cascading changes
         clearTimeout(this._delayedEvent);
         this._delayedEvent = setTimeout(() => bubbleEvent(this, "scene-updated", this.ctx), 17);
