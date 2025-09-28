@@ -1,118 +1,57 @@
-import { LoadAssetContainerAsync, type LoadAssetContainerOptions } from "@babylonjs/core/Loading/sceneLoader";
-import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { deepMerge } from "@babylonjs/core/Misc/deepMerger";
-import { Tags } from "@babylonjs/core/Misc/tags";
-import { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import type { Nullable } from "@babylonjs/core/types";
-import "@babylonjs/loaders/glTF/2.0";
-import { GLTFLoaderAnimationStartMode, type MaterialVariantsController } from "@babylonjs/loaders/glTF/glTFFileLoader";
-import { assert } from "./utils/asserts";
 import { Observable } from "@babylonjs/core/Misc/observable";
+import { Model } from "./gltf/model";
+import { LoadModel } from "./gltf/loader";
+import { assertNonNull } from "./utils/asserts";
 
 
-const LDOPTIONS: LoadAssetContainerOptions = {
-    pluginOptions: {
-        gltf: {
-            enabled: true,
-            animationStartMode: GLTFLoaderAnimationStartMode.NONE,
-            loadAllMaterials: true,
-            extensionOptions: {
-                KHR_materials_variants: {
-                    enabled: true
-                }
-            }
-        }
-    }
-};
-
-export interface Model {
-    url: string;
-    assets: AssetContainer;
-    root: TransformNode;
-    matCtrl: MaterialVariantsController;
-}
-
-export interface ModelAttached {
-    model: Model;
-    attached: boolean;
-}
-
-const NULLSKINS: MaterialVariantsController = {
-    variants: [],
-    selectedVariant: "",
-}
-
-
-export class MyAssetManager {
+export class MyModelManager {
     _scene: Scene;
 
-    onAttachingObservable: Observable<ModelAttached>;
+    onLoadingObservable: Observable<number>;
     onLoadedObservable: Observable<Model>;
-    onProgressObservable: Observable<number>;
+    onAttachingObservable: Observable<Model>;
 
     constructor(scene: Scene) {
         this._scene = scene;
-        this.onAttachingObservable = new Observable<ModelAttached>();
+        this.onLoadingObservable = new Observable<number>();
         this.onLoadedObservable = new Observable<Model>();
-        this.onProgressObservable = new Observable<number>();
+        this.onAttachingObservable = new Observable<Model>();
     }
 
-    _running: number = 0;
-    get running(): number {
-        return this._running;
+    _loadingCount: number = 0;
+    get loadingCount(): number {
+        return this._loadingCount;
     }
-    set running(val: number) {
-        this._running = val;
-        this.onProgressObservable.notifyObservers(this._running);
+    set loadingCount(val: number) {
+        this._loadingCount = val;
+        this.onLoadingObservable.notifyObservers(this._loadingCount);
     }
 
     async loadModel(url: string): Promise<Model> {
-        let assets: AssetContainer;
-        let root: TransformNode;
-        let matCtrl = NULLSKINS;
-        const auxoptions: LoadAssetContainerOptions = {
-            pluginOptions: {
-                gltf: {
-                    extensionOptions: {
-                        KHR_materials_variants: {
-                            onLoaded: (ctrl) => matCtrl = ctrl,
-                        }
-                    }
-                }
-            }
-        }
-        const options = deepMerge(LDOPTIONS, auxoptions);
         try {
-            this.running += 1;
-            assets = await LoadAssetContainerAsync(url, this._scene, options);
-            assert(assets.rootNodes.length == 1, "Expected single root node");
-            root = assets.rootNodes[0] as TransformNode;
-            assets.meshes.forEach(m => {
-                m.id = `${url}#${m.name}`;
-                Tags.AddTagsTo(m, "model")
-            });
-            assets.transformNodes.forEach(n => {
-                n.id = `${url}#${n.name}`;
-                Tags.AddTagsTo(n, "slot")
-            });
-            const model = { url, assets, root, matCtrl };
+            this.loadingCount += 1;
+            const model = await LoadModel(url, this._scene);
             this.onLoadedObservable.notifyObservers(model);
             return model;
         } finally {
-            this.running -= 1;
+            this.loadingCount -= 1;
         }
     }
 
-    attachModel(model: Model, node: Nullable<TransformNode> = null) {
-        model.assets.addAllToScene(); // expecting no effect if already added
-        model.root.parent = node;
-        this.onAttachingObservable.notifyObservers({ model, attached: true });
+    attachModel(model: Model, anchor: Nullable<string> = null) {
+        let parent = null;
+        if (anchor) {
+            parent = this._scene.getTransformNodeByName(anchor);
+            assertNonNull(parent, `Missing attachment anchor: ${anchor}`)
+        }
+        model.attach(parent);
+        this.onAttachingObservable.notifyObservers(model);
     }
 
     detachModel(model: Model) {
-        model.root.parent = null;
-        model.assets.removeAllFromScene();
-        this.onAttachingObservable.notifyObservers({ model, attached: false });
+        model.detach();
+        this.onAttachingObservable.notifyObservers(model)
     }
 }

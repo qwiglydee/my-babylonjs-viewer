@@ -14,12 +14,15 @@ import { debug, debugChanges } from "./utils/debug";
 import { bubbleEvent } from "./utils/events";
 
 import { assetsCtx, sceneCtx, type SceneCtx } from "./context";
-import { MyAssetManager } from "./assetmgr";
+import { MyModelManager } from "./assetmgr";
 import { DefaultLoadingScreen } from "@babylonjs/core/Loading/loadingScreen";
+import type { Model } from "./gltf/model";
+import { Tags } from "@babylonjs/core/Misc/tags";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
     stencil: false,
+    doNotHandleContextLost: true,
 }
 
 const SCNOPTIONS: SceneOptions = {
@@ -42,7 +45,7 @@ export class MyViewerElement extends ReactiveElement {
     ctx!: SceneCtx;
 
     @provide({ context: assetsCtx })
-    assetMgr!: MyAssetManager;
+    modelMgr!: MyModelManager;
 
     static override styles = css`
         :host {
@@ -104,12 +107,16 @@ export class MyViewerElement extends ReactiveElement {
         this.engine.loadingScreen = new DefaultLoadingScreen(this.canvas, "", "#202020");
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
-        this.assetMgr = new MyAssetManager(this.scene);
-        this.assetMgr.onAttachingObservable.add(() => this.updateCtx());
-        this.assetMgr.onProgressObservable.add((count: number) => {
+        this.modelMgr = new MyModelManager(this.scene);
+        this.modelMgr.onLoadingObservable.add((count: number) => {
             this.engine.loadingUIText = `Loading ${count}`;
             if (count) this.engine.displayLoadingUI(); else this.engine.hideLoadingUI();
         });
+        this.modelMgr.onLoadedObservable.add((model: Model) => {
+            model.meshes.forEach(m => Tags.AddTagsTo(m, "model"));
+            model.transformNodes.forEach(n => Tags.AddTagsTo(n, "slot"));            
+        });
+        this.modelMgr.onAttachingObservable.add(() => this.updateCtx());
         this.updateCtx();
     }
 
@@ -137,16 +144,5 @@ export class MyViewerElement extends ReactiveElement {
         // batch all cascading changes
         clearTimeout(this._delayedEvent);
         this._delayedEvent = setTimeout(() => bubbleEvent(this, "scene-updated", this.ctx), 17);
-    }
-
-    // testing
-
-    __clear() {
-        this.scene.getMeshesByTags('model').forEach(m => this.scene.removeMesh(m));
-    }
-    async __load(url: string, node?: string) {
-        const model = await this.assetMgr.loadModel(url);
-        this.assetMgr.attachModel(model, node ? this.scene.getTransformNodeByName(node) : null);
-        return model;
     }
 }
