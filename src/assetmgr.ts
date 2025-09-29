@@ -2,7 +2,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { Nullable } from "@babylonjs/core/types";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { Model } from "./gltf/model";
-import { LoadModel } from "./gltf/loader";
+import { LoadModel, ImportModel } from "./gltf/loader";
 import { assertNonNull } from "./utils/asserts";
 
 
@@ -39,6 +39,17 @@ export class MyModelManager {
             this.loadingCount -= 1;
         }
     }
+
+    async importModel(url: string): Promise<void> {
+        try {
+            this.loadingCount += 1;
+            const model = await ImportModel(url, this._scene);
+            this.onLoadedObservable.notifyObservers(model);
+        } finally {
+            this.loadingCount -= 1;
+        }
+    }
+
 
     attachModel(model: Model, anchor: Nullable<string> = null) {
         let parent = null;
