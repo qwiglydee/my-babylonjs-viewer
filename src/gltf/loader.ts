@@ -1,33 +1,31 @@
-import type { AssetContainer } from "@babylonjs/core/assetContainer";
-import { LoadAssetContainerAsync, type LoadAssetContainerOptions } from "@babylonjs/core/Loading/sceneLoader.js";
 import type { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/loaders/glTF/2.0"; // FIXME: discard unused extensions 
-import { GLTFLoaderAnimationStartMode, type MaterialVariantsController } from "@babylonjs/loaders/glTF/glTFFileLoader";
+import { GLTFFileLoader, GLTFLoaderAnimationStartMode, type IGLTFLoaderData, type MaterialVariantsController } from "@babylonjs/loaders/glTF/glTFFileLoader";
 import { Tools } from "@babylonjs/core/Misc/tools";
 
 import { Model } from "./model";
 
-
 export async function LoadModel(url: string, scene: Scene): Promise<Model> {
-    const model = new Model(scene, Tools.GetFilename(url));
+    const rooturl = Tools.GetFolderPath(url);
+    const filename = Tools.GetFilename(url);
+    const model = new Model(scene, filename);
 
-    const options: LoadAssetContainerOptions = {
-        pluginOptions: {
-            gltf: {
+    const loader = new GLTFFileLoader({
+        animationStartMode: GLTFLoaderAnimationStartMode.NONE,
+        loadAllMaterials: true,
+        compileMaterials: true,
+        extensionOptions: {
+            KHR_materials_variants: {
                 enabled: true,
-                animationStartMode: GLTFLoaderAnimationStartMode.NONE,
-                loadAllMaterials: true,
-                extensionOptions: {
-                    KHR_materials_variants: {
-                        enabled: true,
-                        onLoaded: (ctrl: MaterialVariantsController) => model.materialCtrl = ctrl
-                    }
-                }
+                onLoaded: (ctrl: MaterialVariantsController) => model.materialCtrl = ctrl
             }
-        }
-    }
+        },
+        loggingEnabled: true
+    })
 
-    const assets: AssetContainer = await LoadAssetContainerAsync(url, scene, options);
+    const loading = new Promise((resolve, reject) => loader.loadFile(scene, url, rooturl, resolve, undefined, true, reject));
+    const data = (await loading) as IGLTFLoaderData;
+    const assets = await loader.loadAssetContainerAsync(scene, data, rooturl, undefined, filename);
     model.meshes = assets.meshes;
     model.animations = assets.animations;
     model.animationGroups = assets.animationGroups;
