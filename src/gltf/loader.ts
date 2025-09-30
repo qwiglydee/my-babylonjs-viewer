@@ -12,7 +12,7 @@ const LDOPTIONS: Partial<GLTFFileLoader> = {
     animationStartMode: GLTFLoaderAnimationStartMode.NONE,
     loadAllMaterials: true,
     compileMaterials: true,
-    loggingEnabled: true
+    loggingEnabled: false,
 }
 
 

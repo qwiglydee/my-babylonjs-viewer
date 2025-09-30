@@ -1,7 +1,7 @@
 import { ReactiveElement } from "lit";
 import type { PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { consume} from "@lit/context";
+import { consume } from "@lit/context";
 
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Nullable } from "@babylonjs/core/types";
@@ -19,23 +19,22 @@ export class MyPartElem extends ReactiveElement {
     @state()
     ctx!: SceneCtx;
 
-    _ref!: string;
-    get ref(): string { return this._ref!; }
+    _target!: string;
+    get target(): string { return this._target!; }
 
     @property({ type: Boolean, reflect: true })
     selected = false;
 
     @property({ type: Boolean, reflect: true })
-    disabled = false;
+    disabled = true; // auto-updated 
 
-    get enabled() {
-        return !this.disabled && this.selected;
-    }
+    @state()
+    _enabled = false; // == !disabled && selected
 
     override connectedCallback(): void {
         super.connectedCallback();
-        assert(this.hasAttribute('ref'), `Property ${this.tagName}.ref required`);
-        this._ref = this.getAttribute('ref')!;
+        assert(this.hasAttribute('target'), `Property ${this.tagName}.target required`);
+        this._target = this.getAttribute('target')!;
         assert(this.ctx, `The ${this.tagName} requires scene context under viewer`);
     }
 
@@ -43,33 +42,39 @@ export class MyPartElem extends ReactiveElement {
         super.disconnectedCallback()
     }
 
-    @state() _target: Nullable<TransformNode> = null;
-    @state() _enabled?: boolean;
+    @state() _attached: boolean = true; // actually present and visible, initialy true
+    @state() _anchor: Nullable<TransformNode> = null; // actual node
 
     #toggle() {
-        assertNonNull(this._target);
-        this._target?.setEnabled(this.enabled);
-        this._enabled = this.enabled;
+        assertNonNull(this._anchor);
+        this._anchor.setEnabled(this._enabled);
+        this._attached = this._anchor.isEnabled();
     }
-    
+
     override update(changes: PropertyValues) {
-        if(changes.has('ctx')) {
-            this._target = this.ctx.scene.getMeshByName(this._ref) ?? null;
-            this.disabled = (this._target === null);
+        if (changes.has('ctx')) {
+            this._anchor = this.ctx.scene.getMeshByName(this._target) ?? null;
+            this.disabled = (this._anchor === null);
         }
 
-        if (this._target) {
-            if (changes.has('selected') || changes.has('disabled') || changes.has('_target')) this.#toggle();
+        if (changes.has('_anchor')) {
+            this._attached = this._anchor !== null && this._anchor.isEnabled();
+        }
+
+        if (changes.has('disabled') || changes.has('selected')) {
+            this._enabled = !this.disabled && this.selected;
+        }
+
+        if (this._anchor) {
+            if (changes.has('_enabled') || changes.has('_anchor')) this.#toggle();
+        }
+
+        if (this.hasUpdated) {
+            if (changes.has('_attached') || (changes.has('_anchor') && this._attached)) {
+                queueEvent(this, 'part-updated', { enabled: this._enabled, attached: this._attached, anchor: this._anchor?.id });
+            }
         }
 
         super.update(changes);
-    }
-
-    protected override updated(changes: PropertyValues): void {
-        super.updated(changes);
-        if (changes.has('disabled') && changes.get('disabled') === undefined) return; // skip initial update
-        if (changes.has('_enabled') || changes.has('_target')) {
-            queueEvent(this, 'part-updated', { enabled: this._enabled, target: this._target?.name });
-        }
     }
 }

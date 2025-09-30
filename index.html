@@ -42,8 +42,8 @@
         <my-model class="base" id="plane3" src="assets/plane3.glb"></my-model>
         <my-model class="part" id="gear1" src="assets/plane-gear1.glb" anchor="gear" selected></my-model>
         <my-model class="part" id="gear2" src="assets/plane-gear2.glb" anchor="gear"></my-model>
-        <my-part class="part" id="hood" ref="hood"></my-part>
-        <my-part class="part" id="tail" ref="tail.002"></my-part>
+        <my-part class="part" id="hood" target="hood"></my-part>
+        <my-part class="part" id="tail" target="tail.002"></my-part>
     </my-viewer>
     <div>
         <section class="border rounded-3 mb-3 p-3">
@@ -94,7 +94,7 @@
         environ: document.querySelector('my-environ'),
         basemodels: document.querySelectorAll('my-model.base'),
         partmodels: document.querySelectorAll('my-model.part'),
-        partrefs: document.querySelectorAll('my-part.part'),
+        modelparts: document.querySelectorAll('my-part.part'),
     }
 
     var ui = {
@@ -106,15 +106,14 @@
     ui.model.addEventListener('change', function (e) {
         let input = e.target;
         let item = document.getElementById(input.value);
-        my.basemodels.forEach(m => m.selected = false);
-        item.selected = true;
+        my.basemodels.forEach(m => m.selected = m.id == input.value);
     });
 
     ui.items.addEventListener('change', function (e) {
         let input = e.target;
         let item = document.getElementById(input.value);
-        document.querySelectorAll(`[anchor=${item.anchor}]`).forEach(it => it.selected = false);
         item.selected = input.checked;
+        document.querySelectorAll(`[anchor=${item.anchor}]`).forEach(it => { if (it !== item) it.selected = false });
     });
 
     ui.skins.addEventListener('change', function (e) {
@@ -124,26 +123,30 @@
     });
 
     my.viewer.addEventListener('model-updated', function (e) {
-        console.debug(e.type, e.target.id, e.detail);
-        let item = e.target;
-        if (item.classList.contains('base') && item.enabled) ui.model.value = item.id;
+        console.debug(e.type, e.target.id, e.detail);    
     });
 
     my.viewer.addEventListener('part-updated', function (e) {
-        console.debug(e.type, e.target.id, e.detail);
-        let item = e.target;
-        let input = ui.items.querySelector(`[value=${item.id}]`);
-        input.disabled = item.disabled;
-        input.checked = item.selected;
+        console.debug(e.type, e.target.id, e.detail);    
     });
 
     my.viewer.addEventListener('scene-updated', function (e) {
         console.debug(e.type, e.detail);
+        
+        my.basemodels.forEach(item => {
+            if (item.selected) ui.model.value = item.id;
+        })
+
         my.partmodels.forEach(item => {
             let input = ui.items.querySelector(`[value=${item.id}]`);
             input.disabled = item.disabled;
             input.checked = item.selected;
-            // input.closest(".form-check").hidden = input.disabled;
+        });
+
+        my.modelparts.forEach(item => {
+            let input = ui.items.querySelector(`[value=${item.id}]`);
+            input.disabled = item.disabled;
+            input.checked = item.selected;
         });
     });
 </script>

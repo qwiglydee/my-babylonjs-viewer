@@ -7,5 +7,5 @@ export function debug(that: HTMLElement, kind: string, data?: any) {
 export function debugChanges(that: HTMLElement, kind: string, changes: PropertyValues, keys?: PropertyKey[]) {
     if (!keys) keys = [...changes.keys()];
     // @ts-ignore
-    debug(that, kind, Object.fromEntries(keys.map(k => [k, that[k]])));
+    debug(that, kind, { new: Object.fromEntries(keys.map(k => [k, that[k]])), old: Object.fromEntries(changes)});
 }

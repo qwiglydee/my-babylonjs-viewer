@@ -32,11 +32,10 @@ export class MyModelElem extends ReactiveElement {
     selected = false;
 
     @property({ type: Boolean, reflect: true })
-    disabled = false;
+    disabled = false; // auto-updated 
 
-    get enabled() {
-        return !this.disabled && this.selected;
-    }
+    @state()
+    _enabled = false; // == !disabled && selected
 
     @property()
     skin: Nullable<string> = null;
@@ -46,7 +45,6 @@ export class MyModelElem extends ReactiveElement {
         assert(this.hasAttribute('src'), `Property ${this.tagName}.src required`);
         this._src = this.getAttribute('src')!;
         assert(this.ctx, `The ${this.tagName} requires scene context under viewer`);
-        this.#init();
     }
 
     override disconnectedCallback(): void {
@@ -54,12 +52,9 @@ export class MyModelElem extends ReactiveElement {
         super.disconnectedCallback()
     }
 
-    @state() _loaded = false;
     _model: Nullable<Model> = null;
-
-    #init() {
-    }
-
+    @state() _loaded = false;
+    
     async #load() {
         this._model = await this.mgr.loadModel(this.src);
         this._loaded = true;
@@ -67,19 +62,19 @@ export class MyModelElem extends ReactiveElement {
 
     #dispose() {
         this._model?.dispose();
+        this._model = null;
         this._loaded = false;
     }
 
-    @state() _attached: boolean = false;
-    @state() _anchor: Nullable<TransformNode> = null;
+    @state() _attached: boolean = false; // actually attached
+    @state() _anchor: Nullable<TransformNode> = null; // actual anchor
 
-    #attach() {
+    #retach() {
         assertNonNull(this._model);
-        if (!this.enabled) {
-            this.mgr.detachModel(this._model);
-        } else {
+        if (this._enabled) {
             this.mgr.attachModel(this._model, this.anchor);
-            this._attached = true;
+        } else {
+            this.mgr.detachModel(this._model);
         }
         this._attached = this._model.attached;
         this._anchor = this._model.anchor;
@@ -96,37 +91,39 @@ export class MyModelElem extends ReactiveElement {
     }
 
     override update(changes: PropertyValues) {
-        if(changes.has('ctx') && this._loaded) {
-            this._attached = this._model!.attached;
+        if(changes.has('ctx')) {
+            this._attached = this._model?.attached ?? false;
         }
+        
         if(changes.has('ctx') || changes.has('anchor')) {
-            this.disabled = !(this.anchor == null || this.ctx.slots.includes(this.anchor));
             this._anchor = this.anchor ? this.ctx.scene.getTransformNodeByName(this.anchor) : null;
-            // debug(this, 'validated', { disabled: this.disabled, target: this._target?.id });
+            this.disabled = this.anchor != null && this._anchor == null; 
+        }
+
+        if(changes.has('disabled') || changes.has('selected')) {
+            this._enabled = !this.disabled && this.selected;
         }
 
         // debugChanges(this, 'updating', changes);
 
-        if (!this._loaded && this.enabled) this.#load();
-
         if (this._loaded) {
             if (changes.has('_loaded')) {
-                this.#attach();
+                this.#retach();
                 this.#reskin();
             } else {
-                if (changes.has('selected') || changes.has('disabled') || changes.has('_anchor')) this.#attach();
+                if (changes.has('_enabled') || changes.has('_anchor')) this.#retach();
                 if (changes.has('skin')) this.#reskin();
+            }
+        } else {
+            if (changes.has('_enabled') && this._enabled) this.#load();
+        }
+
+        if (this.hasUpdated) {
+            if (changes.has('_attached') || (changes.has('_anchor') && this._attached)) {
+                queueEvent(this, 'model-updated', { enabled: this._enabled, attached: this._attached, anchor: this._anchor?.id });
             }
         }
 
         super.update(changes);
-    }
-
-    protected override updated(changes: PropertyValues): void {
-        super.updated(changes);
-        if (changes.has('_loaded') && changes.get('_loaded') === undefined) return; // skip initial update
-        if (changes.has('_attached') || (this._attached && changes.has('_anchor'))) {
-            queueEvent(this, 'model-updated', { enabled: this.enabled, attached: this._attached, target: this._anchor?.name });
-        }
     }
 }

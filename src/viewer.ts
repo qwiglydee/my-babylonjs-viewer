@@ -1,6 +1,6 @@
 import { provide } from "@lit/context";
-import { css, html, ReactiveElement, render } from "lit";
-import { customElement, query } from "lit/decorators.js";
+import { css, html, ReactiveElement, render, type PropertyValues } from "lit";
+import { customElement, query, state } from "lit/decorators.js";
 
 import { Engine } from "@babylonjs/core/Engines/engine";
 import type { EngineOptions } from "@babylonjs/core/Engines/thinEngine";
@@ -13,7 +13,6 @@ import { bubbleEvent } from "./utils/events";
 
 import { assetsCtx, sceneCtx, type SceneCtx } from "./context";
 import { MyLoadingScreen } from "./screen";
-import { debug } from "./utils/debug";
 import { MyModelManager } from "./assetmgr";
 import type { Model } from "./gltf/model";
 import { Tags } from "@babylonjs/core/Misc/tags";
@@ -88,8 +87,14 @@ export class MyViewerElement extends ReactiveElement {
             },
             { threshold: 0.5 }
         );
-        this.addEventListener('model-updated', () => queueMicrotask(() => this.updateCtx()));
-        this.addEventListener('part-updated', () => queueMicrotask(() => this.updateCtx()));
+        this.addEventListener('model-updated', (ev: Event) => {
+            // debug(this, "CTX ~= ", { id: ev.target!.id });
+            this._updating_ctx = true;
+        });
+        this.addEventListener('part-updated', (ev: Event) => {
+            // debug(this, "CTX ~= ", { id: ev.target!.id });
+            this._updating_ctx = true;
+        });
     }
 
     override connectedCallback(): void {
@@ -118,10 +123,13 @@ export class MyViewerElement extends ReactiveElement {
             if (count) this.engine.displayLoadingUI(); else this.engine.hideLoadingUI();
         });
         this.modelMgr.onLoadedObservable.add((model: Model) => {
+            // debug(this, 'loaded', { id: model.id });
             model.meshes.forEach(m => Tags.AddTagsTo(m, "model"));
             model.transformNodes.forEach(n => Tags.AddTagsTo(n, "slot"));            
         });
-        this.modelMgr.onAttachingObservable.add(() => this.updateCtx());
+        // this.modelMgr.onAttachingObservable.add((model: Model) => {
+        //     debug(this, model.attached ? 'attached' : 'detached', { id: model.id });
+        // });
         this.updateCtx();
     }
 
@@ -137,6 +145,17 @@ export class MyViewerElement extends ReactiveElement {
         this.scene.render();
     }
 
+    @state() _updating_ctx = false;
+
+    override update(changes: PropertyValues) {
+        if (changes.has('_updating_ctx') && this._updating_ctx) {
+            // postponded update to catch all changes in a frame 
+            this._updating_ctx = false;
+            this.updateCtx();
+        }
+        super.update(changes);
+    }
+
     _delayedEvent: any;
     updateCtx() {
         const meshes = this.scene.getMeshesByTags('model');
@@ -145,7 +164,8 @@ export class MyViewerElement extends ReactiveElement {
             bounds: meshes.length ? Mesh.MinMax(meshes) : NULLBOUNDS,
             slots: this.scene.getTransformNodesByTags('slot').map(n => n.name),
         }
-        debug(this, "CTX ====", {...this.ctx});
+        // debug(this, `CTX ==`, {...this.ctx});
+
         // batch all cascading changes
         clearTimeout(this._delayedEvent);
         this._delayedEvent = setTimeout(() => bubbleEvent(this, "scene-updated", this.ctx), 17);
