@@ -13,12 +13,15 @@ import { bubbleEvent } from "./utils/events";
 
 import { assetsCtx, sceneCtx, type SceneCtx } from "./context";
 import { MyLoadingScreen } from "./screen";
-import { MyAssetManager } from "./assetmgr";
 import { debug } from "./utils/debug";
+import { MyModelManager } from "./assetmgr";
+import type { Model } from "./gltf/model";
+import { Tags } from "@babylonjs/core/Misc/tags";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
     stencil: false,
+    doNotHandleContextLost: true,
 }
 
 const SCNOPTIONS: SceneOptions = {
@@ -44,7 +47,7 @@ export class MyViewerElement extends ReactiveElement {
     ctx!: SceneCtx;
 
     @provide({ context: assetsCtx })
-    assetMgr!: MyAssetManager;
+    modelMgr!: MyModelManager;
 
     static override styles = css`
         :host {
@@ -109,11 +112,16 @@ export class MyViewerElement extends ReactiveElement {
         this.engine.loadingScreen = this.loadingScreen;
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
-        this.assetMgr = new MyAssetManager(this.scene);
-        this.assetMgr.onProgressObservable.add((count: number) => {
-            this.loadingScreen.loadingUIText = `Loading ${count}...`;
-            if (count) this.loadingScreen.displayLoadingUI(); else this.loadingScreen.hideLoadingUI();
+        this.modelMgr = new MyModelManager(this.scene);
+        this.modelMgr.onLoadingObservable.add((count: number) => {
+            this.engine.loadingUIText = `Loading ${count}`;
+            if (count) this.engine.displayLoadingUI(); else this.engine.hideLoadingUI();
         });
+        this.modelMgr.onLoadedObservable.add((model: Model) => {
+            model.meshes.forEach(m => Tags.AddTagsTo(m, "model"));
+            model.transformNodes.forEach(n => Tags.AddTagsTo(n, "slot"));            
+        });
+        this.modelMgr.onAttachingObservable.add(() => this.updateCtx());
         this.updateCtx();
     }
 
