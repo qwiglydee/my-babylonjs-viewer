@@ -6,21 +6,20 @@ import { customElement, property, state } from "lit/decorators.js";
 import { Constants } from "@babylonjs/core/Engines/constants";
 import { BackgroundMaterial } from "@babylonjs/core/Materials/Background/backgroundMaterial";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import { Color3, Vector2, Vector3 } from "@babylonjs/core/Maths/math";
+import { Color3, Vector2 } from "@babylonjs/core/Maths/math";
 import { CreatePlane } from "@babylonjs/core/Meshes/Builders/planeBuilder";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Tags } from "@babylonjs/core/Misc/tags";
 import type { Nullable } from "@babylonjs/core/types";
 
-import { assert } from "./utils/asserts";
 import { envCtx, sceneCtx, type EnvCtx, type SceneCtx } from "./context";
-import { debug } from "./utils/debug";
+import { assert } from "./utils/asserts";
 
 const GROUND_TXT = new URL("./assets/ground.png?inline", import.meta.url);
 
 
 @customElement('my-ground')
-export class MyStubElem extends ReactiveElement {
+export class MyGroundElem extends ReactiveElement {
     @consume({ context: sceneCtx, subscribe: true })
     @state()
     ctx!: SceneCtx;

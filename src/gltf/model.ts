@@ -1,13 +1,10 @@
-import { AbstractAssetContainer, type AssetContainer } from "@babylonjs/core/assetContainer";
+import { AbstractAssetContainer } from "@babylonjs/core/assetContainer";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Nullable } from "@babylonjs/core/types";
+import type { Scene } from "@babylonjs/core/scene";
+import type { MaterialVariantsController } from "@babylonjs/loaders/glTF/glTFFileLoader";
 
 import { assert, assertNonNull } from "../utils/asserts";
-import type { MaterialVariantsController } from "@babylonjs/loaders/glTF/2.0";
-import type { Scene } from "@babylonjs/core/scene";
-import type { InteractivityController } from "./KHR_interactivity";
-import type { FlowGraphCoordinator } from "@babylonjs/core/FlowGraph/flowGraphCoordinator";
-
 
 export interface ModelNode {
     name: string;

@@ -25,12 +25,12 @@ import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_variants.js";
 // import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_dispersion.js";
 // import "@babylonjs/loaders/glTF/2.0/Extensions/EXT_materials_diffuse_roughness.js";
 import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_animation_pointer.js";
-import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_node_visibility.js";
-import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_node_selectability.js";
-import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_node_hoverability.js";
+// import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_node_visibility.js";
+// import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_node_selectability.js";
+// import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_node_hoverability.js";
 
-import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_interactivity.js";
-import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_interactivity/index.js";
+// import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_interactivity.js";
+// import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_interactivity/index.js";
 
 
 import "./loader.ts";

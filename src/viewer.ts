@@ -88,11 +88,11 @@ export class MyViewerElement extends ReactiveElement {
             },
             { threshold: 0.5 }
         );
-        this.addEventListener('model-updated', (ev: Event) => {
+        this.addEventListener('model-updated', (_ev: Event) => {
             // debug(this, "CTX ~= ", { id: ev.target!.id });
             this._updating_ctx = true;
         });
-        this.addEventListener('part-updated', (ev: Event) => {
+        this.addEventListener('part-updated', (_ev: Event) => {
             // debug(this, "CTX ~= ", { id: ev.target!.id });
             this._updating_ctx = true;
         });

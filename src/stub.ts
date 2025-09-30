@@ -1,9 +1,9 @@
 import { ReactiveElement } from "lit";
 import type { PropertyValues } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { consume} from "@lit/context";
 
-import { debug, debugChanges } from "./utils/debug";
+import { debugChanges } from "./utils/debug";
 
 import { sceneCtx, type SceneCtx } from "./context";
 import { assertNonNull } from "./utils/asserts";

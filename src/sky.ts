@@ -4,8 +4,7 @@ import { ReactiveElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 import { BackgroundMaterial } from "@babylonjs/core/Materials/Background/backgroundMaterial";
-import type { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
-import { Texture } from "@babylonjs/core/Materials/Textures/texture";
+import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
 import { Color3, Vector3 } from "@babylonjs/core/Maths/math";
 import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
@@ -67,7 +66,7 @@ export class MyStubElem extends ReactiveElement {
     #initTexture() {
         this._texture?.dispose(); 
         this._texture = this.env.texture.clone();
-        this._texture.coordinatesMode = Texture.SKYBOX_MODE;
+        this._texture.coordinatesMode = 5; // SKYBOX
         this._texture.level = this.intensity; 
 
         this._material.reflectionTexture = this._texture;
