@@ -8,6 +8,7 @@ import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { Scene, type SceneOptions } from "@babylonjs/core/scene";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Vector3 } from "@babylonjs/core/Maths/math";
+import { Tags } from "@babylonjs/core/Misc/tags";
 
 import { bubbleEvent } from "./utils/events";
 
@@ -15,7 +16,7 @@ import { assetsCtx, sceneCtx, type SceneCtx } from "./context";
 import { MyLoadingScreen } from "./screen";
 import { MyModelManager } from "./assetmgr";
 import type { Model } from "./gltf/model";
-import { Tags } from "@babylonjs/core/Misc/tags";
+import { debug } from "./utils/debug";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
@@ -164,7 +165,7 @@ export class MyViewerElement extends ReactiveElement {
             bounds: meshes.length ? Mesh.MinMax(meshes) : NULLBOUNDS,
             slots: this.scene.getTransformNodesByTags('slot').map(n => n.name),
         }
-        // debug(this, `CTX ==`, {...this.ctx});
+        debug(this, `CTX ==`, {...this.ctx});
 
         // batch all cascading changes
         clearTimeout(this._delayedEvent);

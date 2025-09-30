@@ -31,9 +31,9 @@
 
 <body>
     <my-viewer>
-        <my-camera autospin></my-camera>
+        <my-camera autospin autospinDelay="5000" autozoom></my-camera>
         <my-environ>
-            <my-sky intensity="0.25"></my-sky>
+            <my-sky intensity="0.25" blurring="0.75"></my-sky>
             <my-ground></my-ground>
         </my-environ>
         <!-- <my-stub></my-stub> -->
@@ -123,7 +123,12 @@
     });
 
     my.viewer.addEventListener('model-updated', function (e) {
-        console.debug(e.type, e.target.id, e.detail);    
+        console.debug(e.type, e.target.id, e.detail);
+        let item = e.target;
+        if (item.classList.contains('base') && item.selected) {
+            // after actual scene update
+            setTimeout(() => my.camera.reset(), 17);
+        }
     });
 
     my.viewer.addEventListener('part-updated', function (e) {

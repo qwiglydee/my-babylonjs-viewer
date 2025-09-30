@@ -5,7 +5,7 @@ import { consume} from "@lit/context";
 
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Tools } from "@babylonjs/core/Misc/tools";
-import { Epsilon, Vector3 } from "@babylonjs/core/Maths/math";
+import { Vector3 } from "@babylonjs/core/Maths/math";
 
 import { sceneCtx, type SceneCtx } from "./context";
 
@@ -30,6 +30,12 @@ export class MyCameraElem extends ReactiveElement {
     @property({ type: Boolean })
     autospin = false;
 
+    @property({ type: Number })
+    autospinDelay = 3000;
+
+    @property({ type: Boolean })
+    autozoom = false;
+
     override connectedCallback(): void {
         super.connectedCallback();
         this.#init();
@@ -49,8 +55,7 @@ export class MyCameraElem extends ReactiveElement {
         this.camera.wheelDeltaPercentage = 0.01; // ??
         this.camera.useNaturalPinchZoom = true;
         this.camera.attachControl();
-
-        this.camera.useAutoRotationBehavior = this.autospin;
+        this.reset();
     }
 
     #dispose() {
@@ -61,13 +66,25 @@ export class MyCameraElem extends ReactiveElement {
         return this.camera._calculateLowerRadiusFromModelBoundingSphere(this.ctx.bounds.min, this.ctx.bounds.max, this.zoomFactor);
     }
 
-    reframe() {
+    reset() {
         this.camera.autoRotationBehavior?.resetLastInteractionTime();
         let distance = this.#calcDistance();
         this.#adjLimits(distance);
         this.camera.interpolateTo(
             Tools.ToRadians(this.alpha),
-            Tools.ToRadians(this.beta), 
+            Tools.ToRadians(this.beta),            
+            distance, 
+            Vector3.Center(this.ctx.bounds.min, this.ctx.bounds.max)
+        );
+    }
+
+    reframe() {
+        this.camera.autoRotationBehavior?.resetLastInteractionTime();
+        let distance = this.#calcDistance();
+        this.#adjLimits(distance);
+        this.camera.interpolateTo(
+            this.camera.alpha,
+            this.camera.beta,
             distance, 
             Vector3.Center(this.ctx.bounds.min, this.ctx.bounds.max)
         );
@@ -80,7 +97,8 @@ export class MyCameraElem extends ReactiveElement {
 
     override update(changes: PropertyValues) {
         if (changes.has('ctx')) {
-            this.reframe();
+            this.camera.autoRotationBehavior?.resetLastInteractionTime();
+            if (this.autozoom) this.reframe();
         } else if (changes.has('alpha') || changes.has('beta') || changes.has('zoomFactor')) {
             let { alpha, beta, radius } = this.camera;
             if (changes.has('alpha')) alpha = Tools.ToRadians(this.alpha);
@@ -92,8 +110,12 @@ export class MyCameraElem extends ReactiveElement {
             this.camera.interpolateTo(alpha, beta, radius, this.camera.target);
         }
 
-        if (changes.has('autospin')) this.camera.useAutoRotationBehavior = this.autospin;
-
+        if (changes.has('autospin')) {
+            this.camera.useAutoRotationBehavior = this.autospin;
+        }
+        if (changes.has('autospinDelay') && this.camera.autoRotationBehavior) {
+            this.camera.autoRotationBehavior.idleRotationWaitTime = this.autospinDelay;
+        }
         super.update(changes);
     }
 }
