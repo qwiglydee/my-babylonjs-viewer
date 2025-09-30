@@ -50,19 +50,34 @@ export class MyModelManager {
         }
     }
 
+    _attached = new Map<string, Model>();
 
-    attachModel(model: Model, anchor: Nullable<string> = null) {
-        let parent = null;
-        if (anchor) {
-            parent = this._scene.getTransformNodeByName(anchor);
-            assertNonNull(parent, `Missing attachment anchor: ${anchor}`)
+    async attachModel(model: Model, anchorname: Nullable<string> = null) {
+        let anchor = null;
+        if (anchorname) {
+            anchor = this._scene.getTransformNodeByName(anchorname);
+            assertNonNull(anchor, `Missing attachment anchor: ${anchorname}`)
         }
-        model.attach(parent);
+        await model.attach(anchor);
+        this._attached.set(model.id, model);
         this.onAttachingObservable.notifyObservers(model);
     }
 
-    detachModel(model: Model) {
+    detachModel(model: Model) {        
+        this._detachLinked(model);
         model.detach();
+        this._attached.delete(model.id);
         this.onAttachingObservable.notifyObservers(model)
+    }
+
+    _detachLinked(model: Model) {
+        let subattached = model.transformNodes.flatMap(n => n.getChildren().map(ch => Model.modelId(ch)).filter(id => id != model.id));
+        if (subattached.length) {
+            subattached.forEach(modelid => {
+                let submodel = this._attached.get(modelid);
+                assertNonNull(submodel);
+                this.detachModel(submodel);
+            })
+        }
     }
 }

@@ -27,16 +27,13 @@ export async function LoadModel(url: string, scene: Scene): Promise<Model> {
                 enabled: true,
                 onLoaded: (ctrl: MaterialVariantsController) => model.materialCtrl = ctrl
             },
-            KHR_interactivity: {
-                enabled: true,
-            }
         },
-    });
+    }) ;
     const loader = new GLTFFileLoader(options);
-
-    const loading = new Promise((resolve, reject) => loader.loadFile(scene, url, rooturl, resolve, undefined, true, reject));
+    const loading = new Promise((resolve, reject) => loader.loadFile(scene, url, rooturl, resolve, undefined, true, (_r, e) => reject(e)));
     const data = (await loading) as IGLTFLoaderData;
     const assets = await loader.loadAssetContainerAsync(scene, data, rooturl, undefined, filename);
+    
     model.meshes = assets.meshes;
     model.animations = assets.animations;
     model.animationGroups = assets.animationGroups;
@@ -45,6 +42,7 @@ export async function LoadModel(url: string, scene: Scene): Promise<Model> {
     model.multiMaterials = assets.multiMaterials;
     model.materials = assets.materials;
     model.textures = assets.textures;
+    model.populateIds();
     model.populateRootNodes();
 
     return model;
@@ -56,8 +54,9 @@ export async function ImportModel(url: string, scene: Scene): Promise<Model> {
     const fakemodel = new Model(scene, filename);
 
     const loader = new GLTFFileLoader(LDOPTIONS);
-    const loading = new Promise((resolve, reject) => loader.loadFile(scene, url, rooturl, resolve, undefined, true, reject));
+    const loading = new Promise((resolve, reject) => loader.loadFile(scene, url, rooturl, resolve, undefined, true, (_r, e) => reject(e)));
     const data = (await loading) as IGLTFLoaderData;
     await loader.loadAsync(scene, data, rooturl, undefined, filename);
+    
     return fakemodel;
 }

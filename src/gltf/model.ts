@@ -5,7 +5,14 @@ import type { Nullable } from "@babylonjs/core/types";
 import { assert, assertNonNull } from "../utils/asserts";
 import type { MaterialVariantsController } from "@babylonjs/loaders/glTF/2.0";
 import type { Scene } from "@babylonjs/core/scene";
+import type { InteractivityController } from "./KHR_interactivity";
+import type { FlowGraphCoordinator } from "@babylonjs/core/FlowGraph/flowGraphCoordinator";
 
+
+export interface ModelNode {
+    name: string;
+    id: string;
+}
 
 /**
  * Subset of stuff:
@@ -26,12 +33,14 @@ export class Model extends AbstractAssetContainer {
     scene: Scene;
     id: string;
 
-    materialCtrl?: Nullable<MaterialVariantsController>;
+    materialCtrl?: MaterialVariantsController;
+    
+    _attached: boolean = false;
+    get attached() { return this._attached; }
 
     rootNode: Nullable<TransformNode> = null; // the only one
-    get attached() { return this.rootNode?.parent != null; }
-    _added: boolean = false;
-    get added() { return this._added; }
+    get anchored() { return this.rootNode?.parent != null; }
+    get anchor() { return this.rootNode?.parent; }
 
     constructor(scene: Scene, id: string) {
         super();
@@ -39,7 +48,7 @@ export class Model extends AbstractAssetContainer {
         this.scene = scene;
 
         scene.onDisposeObservable.add(() => {
-            if (!this.attached) {
+            if (!this.anchored) {
                 this.dispose();
             }
         });
@@ -53,11 +62,29 @@ export class Model extends AbstractAssetContainer {
         this.rootNode = this.rootNodes[0]; 
     }
 
-    attach(node: Nullable<TransformNode> = null) {
-        assertNonNull(this.rootNode);
-        this.rootNode.parent = node;
+    static nodeId(model: Model, node: ModelNode) {
+        return `${model.id}#${node.name}`;
+    }
 
-        if (!this._added) {
+    static modelId(node: ModelNode) {
+        return node.id.slice(0, node.id.indexOf('#'));
+    }
+
+    populateIds() {
+        const markid = (node: ModelNode) => node.id = Model.nodeId(this, node);
+        this.meshes.forEach(markid);
+        this.transformNodes.forEach(markid);
+    }
+
+    includesNode(node: ModelNode) {
+        return node.id.startsWith(this.id);
+    }
+
+    async attach(anchor: Nullable<TransformNode> = null) {
+        assertNonNull(this.rootNode);
+        this.rootNode.parent = anchor;
+
+        if (!this._attached) {
             this.meshes.forEach(o => this.scene.addMesh(o));
             this.animations.forEach(o => this.scene.addAnimation(o));
             this.animationGroups.forEach(o => this.scene.addAnimationGroup(o));
@@ -67,14 +94,14 @@ export class Model extends AbstractAssetContainer {
             this.materials.forEach(o => this.scene.addMaterial(o));
             this.textures.forEach(o => this.scene.addTexture(o));
         }
-        this._added = true;
+        this._attached = true;
     }
 
     detach() {
         assertNonNull(this.rootNode);
         this.rootNode.parent = null;
 
-        if (this._added) {
+        if (this._attached) {
             this.meshes.forEach(o => this.scene.removeMesh(o));
             this.animations.forEach(o => this.scene.removeAnimation(o));
             this.animationGroups.forEach(o => this.scene.removeAnimationGroup(o));
@@ -84,7 +111,7 @@ export class Model extends AbstractAssetContainer {
             this.materials.forEach(o => this.scene.removeMaterial(o));
             this.textures.forEach(o => this.scene.removeTexture(o));
         }
-        this._added = false;
+        this._attached = false;
     }
 
     dispose() {
