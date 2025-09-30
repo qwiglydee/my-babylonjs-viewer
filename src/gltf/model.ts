@@ -40,7 +40,7 @@ export class Model extends AbstractAssetContainer {
 
     rootNode: Nullable<TransformNode> = null; // the only one
     get anchored() { return this.rootNode?.parent != null; }
-    get anchor() { return this.rootNode?.parent; }
+    get anchor(): TransformNode { return this.rootNode?.parent as TransformNode; }
 
     constructor(scene: Scene, id: string) {
         super();

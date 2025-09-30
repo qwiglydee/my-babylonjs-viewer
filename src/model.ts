@@ -6,16 +6,17 @@ import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Nullable } from "@babylonjs/core/types";
 
 import { assetsCtx, sceneCtx, type SceneCtx } from "./context";
-import type { Model, MyAssetManager } from "./assetmgr";
 import { assert, assertNonNull } from "./utils/asserts";
 import { queueEvent } from "./utils/events";
+import type { MyModelManager } from "./assetmgr";
+import type { Model } from "./gltf/model";
 // import { debug, debugChanges } from "./utils/debug";
 
 
 @customElement('my-model')
 export class MyModelElem extends ReactiveElement {
     @consume({ context: assetsCtx })
-    mgr!: MyAssetManager;
+    mgr!: MyModelManager;
 
     @consume({ context: sceneCtx, subscribe: true })
     @state()
@@ -65,7 +66,7 @@ export class MyModelElem extends ReactiveElement {
     }
 
     #dispose() {
-        this._model?.assets?.dispose();
+        this._model?.dispose();
         this._loaded = false;
     }
 
@@ -75,26 +76,29 @@ export class MyModelElem extends ReactiveElement {
     #attach() {
         assertNonNull(this._model);
         if (!this.enabled) {
-            this.mgr.orphanAttachments(this._model);
             this.mgr.detachModel(this._model);
-            this._attached = false;
         } else {
-            this.mgr.attachModel(this._model, this._anchor);
+            this.mgr.attachModel(this._model, this.anchor);
             this._attached = true;
         }
+        this._attached = this._model.attached;
+        this._anchor = this._model.anchor;
     }
 
     #reskin() {
         assertNonNull(this._model);
+        if (!this._model.materialCtrl) return;
         if (this.skin) {
-            this._model.matCtrl.selectedVariant = this.skin;
+            this._model.materialCtrl.selectedVariant = this.skin;
         } else {
-            this._model.matCtrl.selectedVariant = this._model.matCtrl.variants[0];
+            this._model.materialCtrl.selectedVariant = this._model.materialCtrl.variants[0];
         }
     }
 
-
     override update(changes: PropertyValues) {
+        if(changes.has('ctx') && this._loaded) {
+            this._attached = this._model!.attached;
+        }
         if(changes.has('ctx') || changes.has('anchor')) {
             this.disabled = !(this.anchor == null || this.ctx.slots.includes(this.anchor));
             this._anchor = this.anchor ? this.ctx.scene.getTransformNodeByName(this.anchor) : null;
@@ -122,7 +126,7 @@ export class MyModelElem extends ReactiveElement {
         super.updated(changes);
         if (changes.has('_loaded') && changes.get('_loaded') === undefined) return; // skip initial update
         if (changes.has('_attached') || (this._attached && changes.has('_anchor'))) {
-            queueEvent(this, 'model-updated', { enabled: this.enabled && this._attached, target: this._anchor?.name });
+            queueEvent(this, 'model-updated', { enabled: this.enabled, attached: this._attached, target: this._anchor?.name });
         }
     }
 }
