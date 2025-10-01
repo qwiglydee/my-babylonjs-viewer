@@ -2,28 +2,26 @@ import { provide } from "@lit/context";
 import { css, html, ReactiveElement, render, type PropertyValues } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 
+import type { PickingInfo } from "@babylonjs/core/Collisions/pickingInfo";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import type { EngineOptions } from "@babylonjs/core/Engines/thinEngine";
-import { Color4 } from "@babylonjs/core/Maths/math.color";
-import { Scene, type SceneOptions } from "@babylonjs/core/scene";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
-import { Vector3 } from "@babylonjs/core/Maths/math";
-import { Tags } from "@babylonjs/core/Misc/tags";
 import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
-import type { PickingInfo } from "@babylonjs/core/Collisions/pickingInfo";
-
-import { bubbleEvent } from "./utils/events";
-
-import { assetsCtx, pickingCtx, sceneCtx, type SceneCtx } from "./context";
-import { MyLoadingScreen } from "./screen";
-import { MyModelManager } from "./assetmgr";
-import type { Model } from "./gltf/model";
-import { debug } from "./utils/debug";
-import { FlowGraphCoordinator } from "@babylonjs/core/FlowGraph/flowGraphCoordinator";
 import { FlowGraphMeshPickEventBlock } from "@babylonjs/core/FlowGraph/Blocks/Event/flowGraphMeshPickEventBlock";
 import { FlowGraphPlayAnimationBlock } from "@babylonjs/core/FlowGraph/Blocks/Execution/Animation/flowGraphPlayAnimationBlock";
 import { FlowGraphStopAnimationBlock } from "@babylonjs/core/FlowGraph/Blocks/Execution/Animation/flowGraphStopAnimationBlock";
+import { FlowGraphCoordinator } from "@babylonjs/core/FlowGraph/flowGraphCoordinator";
+import { Vector3 } from "@babylonjs/core/Maths/math";
+import { Color4 } from "@babylonjs/core/Maths/math.color";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Tags } from "@babylonjs/core/Misc/tags";
+import { Scene, type SceneOptions } from "@babylonjs/core/scene";
 import type { Nullable } from "@babylonjs/core/types";
+
+import { MyModelManager } from "./assetmgr";
+import { assetsCtx, pickingCtx, sceneCtx, type SceneCtx } from "./context";
+import type { Model } from "./gltf/model";
+import { MyLoadingScreen } from "./screen";
+import { bubbleEvent } from "./utils/events";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
@@ -155,8 +153,8 @@ export class MyViewerElement extends ReactiveElement {
             model.meshes.forEach(m => Tags.AddTagsTo(m, "model"));
             model.transformNodes.forEach(n => Tags.AddTagsTo(n, "slot"));            
         });
-        this.modelMgr.onAttachingObservable.add((model: Model) => {
-            debug(this, model.attached ? 'attached' : 'detached', { id: model.id });
+        this.modelMgr.onAttachingObservable.add((_model: Model) => {
+            // debug(this, model.attached ? 'attached' : 'detached', { id: model.id });
             this.updateFlow();
         });
 
@@ -198,7 +196,7 @@ export class MyViewerElement extends ReactiveElement {
             bounds: meshes.length ? Mesh.MinMax(meshes) : NULLBOUNDS,
             slots: this.scene.getTransformNodesByTags('slot').map(n => n.name),
         }
-        debug(this, `CTX ==`, {...this.ctx});
+        // debug(this, `CTX ==`, {...this.ctx});
 
         // batch all cascading changes
         clearTimeout(this._delayedEvent);
@@ -222,7 +220,6 @@ export class MyViewerElement extends ReactiveElement {
             let name = animation.name.slice(0, -7);
             let targetMesh = this.scene.getMeshByName(name);
             
-            debug(this, `flow ${animation.name} <=> ${targetMesh?.id}`)
             if (!targetMesh) return;
             
             let picking = new FlowGraphMeshPickEventBlock({

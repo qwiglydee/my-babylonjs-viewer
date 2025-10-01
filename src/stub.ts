@@ -3,8 +3,6 @@ import type { PropertyValues } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { consume} from "@lit/context";
 
-import { debugChanges } from "./utils/debug";
-
 import { sceneCtx, type SceneCtx } from "./context";
 import { assertNonNull } from "./utils/asserts";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
@@ -47,6 +45,6 @@ export class MyStubElem extends ReactiveElement {
     
     override update(changes: PropertyValues) {
         super.update(changes);
-        debugChanges(this, 'update', changes);
+        // debugChanges(this, 'update', changes);
     }
 }
