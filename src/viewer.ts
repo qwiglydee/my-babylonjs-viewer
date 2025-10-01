@@ -74,6 +74,16 @@ export class MyViewerElement extends ReactiveElement {
             position: absolute;
             width: 100%;
             height: 100%;
+            z-index: 0;
+        }
+
+        slot[name=overlay] {
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
         }
     `
 
@@ -81,6 +91,7 @@ export class MyViewerElement extends ReactiveElement {
         const innerhtml = html`
             <canvas></canvas>
             <my-loading-screen hidden></my-loading-screen>
+            <slot name="overlay"></slot>
         `;
         render(innerhtml, this.renderRoot);
     }
@@ -136,7 +147,7 @@ export class MyViewerElement extends ReactiveElement {
         this.flowCtrl.start();
 
         this.modelMgr.onLoadingObservable.add((count: number) => {
-            this.engine.loadingUIText = `Loading ${count}`;
+            this.engine.loadingUIText = `Загрузка...`;
             if (count) this.engine.displayLoadingUI(); else this.engine.hideLoadingUI();
         });
         this.modelMgr.onLoadedObservable.add((model: Model) => {
