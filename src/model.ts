@@ -83,11 +83,8 @@ export class MyModelElem extends ReactiveElement {
     #reskin() {
         assertNonNull(this._model);
         if (!this._model.materialCtrl) return;
-        if (this.skin) {
-            this._model.materialCtrl.selectedVariant = this.skin;
-        } else {
-            this._model.materialCtrl.selectedVariant = this._model.materialCtrl.variants[0];
-        }
+        if (!this.skin) this.skin = this._model.materialCtrl.variants[0];
+        this._model.materialCtrl.selectedVariant = this.skin;
     }
 
     override update(changes: PropertyValues) {
