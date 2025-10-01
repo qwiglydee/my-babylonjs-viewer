@@ -19,6 +19,10 @@ import { MyLoadingScreen } from "./screen";
 import { MyModelManager } from "./assetmgr";
 import type { Model } from "./gltf/model";
 import { debug } from "./utils/debug";
+import { FlowGraphCoordinator } from "@babylonjs/core/FlowGraph/flowGraphCoordinator";
+import { FlowGraphMeshPickEventBlock } from "@babylonjs/core/FlowGraph/Blocks/Event/flowGraphMeshPickEventBlock";
+import { FlowGraphPlayAnimationBlock } from "@babylonjs/core/FlowGraph/Blocks/Execution/Animation/flowGraphPlayAnimationBlock";
+import { FlowGraphStopAnimationBlock } from "@babylonjs/core/FlowGraph/Blocks/Execution/Animation/flowGraphStopAnimationBlock";
 import type { Nullable } from "@babylonjs/core/types";
 
 const ENGOPTIONS: EngineOptions = {
@@ -54,6 +58,8 @@ export class MyViewerElement extends ReactiveElement {
 
     @provide({ context: pickingCtx })
     pick!: Nullable<PickingInfo>;
+
+    flowCtrl!: FlowGraphCoordinator;
 
     static override styles = css`
         :host {
@@ -125,6 +131,10 @@ export class MyViewerElement extends ReactiveElement {
         this.scene = new Scene(this.engine, SCNOPTIONS);
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue('--my-background-color'));
         this.modelMgr = new MyModelManager(this.scene);
+
+        this.flowCtrl = new FlowGraphCoordinator({ scene: this.scene });
+        this.flowCtrl.start();
+
         this.modelMgr.onLoadingObservable.add((count: number) => {
             this.engine.loadingUIText = `Loading ${count}`;
             if (count) this.engine.displayLoadingUI(); else this.engine.hideLoadingUI();
@@ -134,9 +144,10 @@ export class MyViewerElement extends ReactiveElement {
             model.meshes.forEach(m => Tags.AddTagsTo(m, "model"));
             model.transformNodes.forEach(n => Tags.AddTagsTo(n, "slot"));            
         });
-        // this.modelMgr.onAttachingObservable.add((model: Model) => {
-        //     debug(this, model.attached ? 'attached' : 'detached', { id: model.id });
-        // });
+        this.modelMgr.onAttachingObservable.add((model: Model) => {
+            debug(this, model.attached ? 'attached' : 'detached', { id: model.id });
+            this.updateFlow();
+        });
 
         this.scene.onPointerObservable.add((info) => {
             if (info.type == PointerEventTypes.POINTERTAP) this.pick = info.pickInfo;
@@ -181,5 +192,45 @@ export class MyViewerElement extends ReactiveElement {
         // batch all cascading changes
         clearTimeout(this._delayedEvent);
         this._delayedEvent = setTimeout(() => bubbleEvent(this, "scene-updated", this.ctx), 17);
+    }
+
+    updateFlow() {
+        this.flowCtrl.flowGraphs.forEach(g => {
+            this.flowCtrl.removeGraph(g);
+            g.dispose()
+        });
+
+        const actions = this.scene.animationGroups.filter(a => a.name.endsWith('-action'));
+        if (!actions.length) return;
+
+        const graph = this.flowCtrl.createGraph();
+        const ctx = graph.createContext();
+        ctx.enableLogging = false;
+
+        actions.forEach(animation => {
+            let name = animation.name.slice(0, -7);
+            let targetMesh = this.scene.getMeshByName(name);
+            
+            debug(this, `flow ${animation.name} <=> ${targetMesh?.id}`)
+            if (!targetMesh) return;
+            
+            let picking = new FlowGraphMeshPickEventBlock({
+                stopPropagation: true,
+                name,
+                targetMesh 
+            });
+            graph.addEventBlock(picking);
+
+            let cancelling = new FlowGraphStopAnimationBlock();
+            cancelling.animationGroup.setValue(animation, ctx);
+
+            let activating = new FlowGraphPlayAnimationBlock();
+            activating.animationGroup.setValue(animation, ctx);
+            
+            picking.done.connectTo(cancelling.in);
+            cancelling.out.connectTo(activating.in);
+        });
+
+        graph.start();
     }
 }
