@@ -9,14 +9,17 @@ import { Scene, type SceneOptions } from "@babylonjs/core/scene";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Vector3 } from "@babylonjs/core/Maths/math";
 import { Tags } from "@babylonjs/core/Misc/tags";
+import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
+import type { PickingInfo } from "@babylonjs/core/Collisions/pickingInfo";
 
 import { bubbleEvent } from "./utils/events";
 
-import { assetsCtx, sceneCtx, type SceneCtx } from "./context";
+import { assetsCtx, pickingCtx, sceneCtx, type SceneCtx } from "./context";
 import { MyLoadingScreen } from "./screen";
 import { MyModelManager } from "./assetmgr";
 import type { Model } from "./gltf/model";
 import { debug } from "./utils/debug";
+import type { Nullable } from "@babylonjs/core/types";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
@@ -48,6 +51,9 @@ export class MyViewerElement extends ReactiveElement {
 
     @provide({ context: assetsCtx })
     modelMgr!: MyModelManager;
+
+    @provide({ context: pickingCtx })
+    pick!: Nullable<PickingInfo>;
 
     static override styles = css`
         :host {
@@ -131,6 +137,11 @@ export class MyViewerElement extends ReactiveElement {
         // this.modelMgr.onAttachingObservable.add((model: Model) => {
         //     debug(this, model.attached ? 'attached' : 'detached', { id: model.id });
         // });
+
+        this.scene.onPointerObservable.add((info) => {
+            if (info.type == PointerEventTypes.POINTERTAP) this.pick = info.pickInfo;
+        });
+
         this.updateCtx();
     }
 

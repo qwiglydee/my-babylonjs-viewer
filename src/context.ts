@@ -5,6 +5,8 @@ import type { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture
 import type { Vector3 } from "@babylonjs/core/Maths/math";
 
 import type { MyModelManager } from "./assetmgr";
+import type { PickingInfo } from "@babylonjs/core/Collisions/pickingInfo";
+import type { Nullable } from "@babylonjs/core/types";
 
 
 export interface Bounds {
@@ -18,7 +20,10 @@ export interface SceneCtx {
     slots: string[];
 }
 
+
 export const sceneCtx = createContext<SceneCtx>(Symbol('babylon-scene'));
+
+export const pickingCtx = createContext<Nullable<PickingInfo>>(Symbol('babylon-picking'))
 
 export const assetsCtx = createContext<MyModelManager>(Symbol('babylon-loader'));
 
