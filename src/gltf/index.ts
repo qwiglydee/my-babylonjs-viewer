@@ -8,7 +8,7 @@ import "@babylonjs/loaders/glTF/2.0/glTFLoaderInterfaces.js";
 import "@babylonjs/loaders/glTF/2.0/glTFLoaderAnimation.js";
 
 import "@babylonjs/loaders/glTF/2.0/Extensions/objectModelMapping.js";
-// import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_draco_mesh_compression.js";
+import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_draco_mesh_compression.js";
 // import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_pbrSpecularGlossiness.js";
 // import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_unlit.js";
 // import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_clearcoat.js";
@@ -24,7 +24,7 @@ import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_variants.js";
 // import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_volume.js";
 // import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_dispersion.js";
 // import "@babylonjs/loaders/glTF/2.0/Extensions/EXT_materials_diffuse_roughness.js";
-import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_animation_pointer.js";
+// import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_animation_pointer.js";
 // import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_node_visibility.js";
 // import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_node_selectability.js";
 // import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_node_hoverability.js";
