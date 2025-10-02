@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import minifyHTML from '@lit-labs/rollup-plugin-minify-html-literals';
 
+import * as info from "./package.json";
+
 export default defineConfig({
   base: "",
   plugins: [
@@ -10,7 +12,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 5000,
     rollupOptions: {
       output: {
-        entryFileNames: "mybabylonviewer.js",
+        entryFileNames: `mybabylonviewer-${info.version}.js`,
         chunkFileNames: "[name]_[hash].js",
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
