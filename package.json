@@ -1,8 +1,9 @@
 {
-  "name": "qw-viewer",
+  "name": "my-babylonjs-viewer",
   "private": true,
-  "version": "1.0.0",
-  "description": "My babylonjs viewer",
+  "version": "1.0.5",
+  "description": "My personal babylonjs viewer",
+  "author": "qwiglydee@gmail.com",
   "type": "module",
   "scripts": {
     "dev": "vite --port 8000",
