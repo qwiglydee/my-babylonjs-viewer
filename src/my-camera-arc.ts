@@ -9,7 +9,6 @@ import type { Nullable } from "@babylonjs/core/types";
 
 import { sceneCtx, type SceneCtx } from "./context";
 import { assertNonNull } from "./utils/asserts";
-import { debug } from "./utils/debug";
 
 @customElement("my-camera-arc")
 export class MyArcCameraElem extends ReactiveElement {
@@ -48,7 +47,6 @@ export class MyArcCameraElem extends ReactiveElement {
     _camera!: ArcRotateCamera;
 
     #create() {
-        debug(this, "creating");
         const scene = this.ctx!.scene;
         const radius = 0.5 * this.ctx!.worldSize;
         this._camera = new ArcRotateCamera("(Camera)", Tools.ToRadians(this.initAlpha), Tools.ToRadians(this.initBeta), radius, Vector3.Zero(), scene);
@@ -74,7 +72,6 @@ export class MyArcCameraElem extends ReactiveElement {
     }
 
     reframe() {
-        debug(this, "reframing", this.ctx?.bounds);
         assertNonNull(this.ctx);
         this._camera.autoRotationBehavior?.resetLastInteractionTime();
         const distance = this._camera._calculateLowerRadiusFromModelBoundingSphere(this.ctx.bounds.min, this.ctx.bounds.max, this.zoomFactor);

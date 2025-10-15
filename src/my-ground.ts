@@ -12,7 +12,6 @@ import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
 
 import { sceneCtx, utilsCtx, type SceneCtx } from "./context";
 import { assertNonNull } from "./utils/asserts";
-import { debug } from "./utils/debug";
 
 const GROUND_TXT = new URL("./assets/ground.png?inline", import.meta.url);
 
@@ -96,7 +95,6 @@ export class MyGroundElem extends ReactiveElement {
     }
 
     _resize(size: number) {
-        debug(this, "resizing", { size });
         this._mesh.scaling.x = size;
         this._mesh.scaling.z = size;
         this._mtl.gridRatio = 1 / size;

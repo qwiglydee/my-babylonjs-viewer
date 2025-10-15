@@ -12,7 +12,7 @@
                 overflow: hidden;
             }
 
-            my-babylon {
+            my-viewer {
                 width: 100%;
                 height: 100%;
                 min-height: 720px;
@@ -24,17 +24,17 @@
         <script type="module" src="src/index.js"></script>
     </head>
 
-    <body class="container">
+    <body class="container bg-light">
         <h2>Интерактивная 3d визуализация</h2>
         <hr>
         <our-app class="row justify-content-md-center">
             <div class="col mb-3">
-                <my-babylon class="border rounded-3" worldSize="32">
+                <my-viewer class="border rounded-2">
                     <my-camera-arc autoSpin autoZoom autoFocus focusFactor="0.5"></my-camera-arc>
                     <my-environ sky skyIntens="0.1" skyBlur="0.75"></my-environ>
                     <my-ground autoSize></my-ground>
                     <my-stuff radius="5" count="3" shuffling></my-stuff>
-                </my-babylon>
+                </my-viewer>
             </div>
             <div class="col-12 col-md-auto">
                 <div class="card bg-primary-subtle mb-3">
@@ -47,12 +47,12 @@
                 </div>
                 <div class="card bg-primary-subtle mb-3">
                     <div class="card-header">Комплектация</div>
-                    <div class="card-body">менюшки</div>
+                    <div class="card-body">менюшки менюшки менюшки</div>
                 </div>
             </div>
         </our-app>
         <hr class="hr" />
-        <section>
+        <section class="bg-body border rounded p-3">
             <h2>Описание</h2>
         </section>
 
@@ -67,19 +67,11 @@
                 camera: document.querySelector("my-camera-arc"),
             };
 
-            my.babylon.addEventListener("babylon.updated", function (e) {
+            my.viewer.addEventListener("babylon.updated", function (e) {
                 console.debug(e.type, e.detail);
             });
 
-            my.babylon.addEventListener("babylon.picked", function (e) {
-                console.debug(e.type, e.detail);
-            });
-
-            my.babylon.addEventListener("babylon.grabbed", function (e) {
-                console.debug(e.type, e.detail);
-            });
-
-            my.babylon.addEventListener("babylon.dropped", function (e) {
+            my.viewer.addEventListener("babylon.picked", function (e) {
                 console.debug(e.type, e.detail);
             });
         </script>

@@ -1,7 +1,7 @@
 import "./our-app";
 import "./our-status";
 
-import "./my-babylon";
+import "./my-viewer";
 import "./my-stuff";
 import "./my-ground";
 import "./my-camera-arc";

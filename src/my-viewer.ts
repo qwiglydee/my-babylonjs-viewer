@@ -2,25 +2,22 @@ import { provide } from "@lit/context";
 import { css, ReactiveElement, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
-import { PointerDragBehavior } from "@babylonjs/core/Behaviors/Meshes/pointerDragBehavior";
 import type { PickingInfo } from "@babylonjs/core/Collisions/pickingInfo";
-import { AxesViewer } from "@babylonjs/core/Debug/axesViewer";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import type { EngineOptions } from "@babylonjs/core/Engines/thinEngine";
 import { PointerEventTypes, PointerInfo } from "@babylonjs/core/Events/pointerEvents";
 import "@babylonjs/core/Layers/effectLayerSceneComponent";
-import { HighlightLayer } from "@babylonjs/core/Layers/highlightLayer";
-import { Color3, Color4, Vector3 } from "@babylonjs/core/Maths";
+import { Color4 } from "@babylonjs/core/Maths";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { UtilityLayerRenderer } from "@babylonjs/core/Rendering/utilityLayerRenderer";
 import type { Nullable } from "@babylonjs/core/types";
 
-import { sceneCtx, pickCtx, utilsCtx, type SceneCtx, type PickDetail } from "./context";
+import type { Scene } from "@babylonjs/core/scene";
+import { pickCtx, sceneCtx, utilsCtx, type PickDetail, type SceneCtx } from "./context";
 import { MyScene } from "./scene";
 import { assertNonNull } from "./utils/asserts";
 import { debug } from "./utils/debug";
 import { bubbleEvent } from "./utils/events";
-import type { Scene } from "@babylonjs/core/scene";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
@@ -28,11 +25,9 @@ const ENGOPTIONS: EngineOptions = {
     doNotHandleContextLost: true,
 };
 
-/**
- * Babylon-aware component and context
- */
-@customElement("my-babylon")
-export class MyBabylonElem extends ReactiveElement {
+
+@customElement("my-viewer")
+export class MyViewerElem extends ReactiveElement {
     @provide({ context: sceneCtx })
     ctx: Nullable<SceneCtx> = null; // updated when changed and got ready 
 
@@ -48,15 +43,6 @@ export class MyBabylonElem extends ReactiveElement {
     @property({ type: Number })
     worldSize = 100;
 
-    @property({ type: Boolean })
-    picking = false;
-
-    @property({ type: Boolean })
-    dragging = false;
-
-    @property({ type: Boolean })
-    highlighting = false;
-
     static override styles = css`
         :host {
             display: block;
@@ -69,6 +55,12 @@ export class MyBabylonElem extends ReactiveElement {
             position: absolute;
             width: 100%;
             height: 100%;
+            z-index: 0;
+        }
+
+        .overlay {
+            position: absolute;
+            z-index: 1;
         }
     `;
 
@@ -133,7 +125,7 @@ export class MyBabylonElem extends ReactiveElement {
             bounds: this.scene.getModelExtends(),
         };
         this._ctx_dirty = false;
-        debug(this, `CTX ==`, this.ctx);
+        // debug(this, `CTX ==`, this.ctx);
         bubbleEvent(this, "babylon.updated", {});
     }
 
@@ -141,6 +133,7 @@ export class MyBabylonElem extends ReactiveElement {
         super.connectedCallback();
         this.renderRoot.appendChild(this.canvas);
         this.#init();
+        this.#initPicking();
         this.#resizingObs.observe(this);
         this.#visibilityObs.observe(this);
     }
@@ -154,7 +147,6 @@ export class MyBabylonElem extends ReactiveElement {
     }
 
     #init() {
-        debug(this, "initializing");
         this.engine = new Engine(this.canvas, undefined, ENGOPTIONS);
         this.engine.resize();
         this.scene = new MyScene(this.engine);
@@ -162,12 +154,6 @@ export class MyBabylonElem extends ReactiveElement {
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue("--my-background-color"));
 
         this.utils = (new UtilityLayerRenderer(this.scene, false, false)).utilityLayerScene;
-
-        if (this.picking) this.#initPicking();
-        if (this.dragging) this.#initDragging();
-        if (this.highlighting) this.#initHighlighting();
-
-        new AxesViewer(this.utils);
 
         this.scene.onModelUpdatedObservable.add(() => this.#invalidateCtx());
         this.#refreshCtx();
@@ -182,21 +168,6 @@ export class MyBabylonElem extends ReactiveElement {
         });
     }
 
-    _dragBhv: Nullable<PointerDragBehavior> = null;
-    #initDragging() {
-        this._dragBhv = new PointerDragBehavior({ dragPlaneNormal: Vector3.Up() });
-        this._dragBhv.onDragStartObservable.add(() => this.ongrabbed(this._dragBhv!.attachedNode as Mesh));
-        this._dragBhv.onDragEndObservable.add(() => this.ondropped(this._dragBhv!.attachedNode as Mesh));
-    }
-
-
-    _highlighter: Nullable<HighlightLayer> = null; 
-    _highloghtColor = Color3.Yellow();
-    
-    #initHighlighting() {
-        this._highlighter = new HighlightLayer("highlight", this.scene);
-    }
-
     #dispose() {
         this.scene.dispose();
         this.engine.dispose();
@@ -207,16 +178,6 @@ export class MyBabylonElem extends ReactiveElement {
         super.update(changes);
     }
 
-    #select(mesh: Mesh) {
-        if (this._dragBhv) this._dragBhv.attach(mesh);
-        if (this._highlighter) this._highlighter.addMesh(mesh, this._highloghtColor);
-    } 
-
-    #deselect(mesh: Mesh) {
-        if (this._dragBhv) this._dragBhv.detach();
-        if (this._highlighter) this._highlighter.removeMesh(mesh);
-    }
-
     _selected: Nullable<Mesh> = null;
 
     onpick(pickinfo: PickingInfo) {
@@ -224,29 +185,14 @@ export class MyBabylonElem extends ReactiveElement {
         if (this._selected === this.pick.pickedMesh) return;
         assertNonNull(this.pick.pickedMesh);
              
-        if (this._selected) this.#deselect(this._selected);
         this._selected = this.pick.pickedMesh as Mesh; 
-        this.#select(this._selected);
 
         bubbleEvent<PickDetail>(this, "babylon.picked", { state: "picked", mesh: this._selected.id });
     }
 
     unpick() {
-        if (this._selected) this.#deselect(this._selected);
         this._selected = null;
         this.pick = null;
         bubbleEvent<PickDetail>(this, "babylon.picked", { mesh: null });
-    }
-
-    ongrabbed(mesh: Mesh) {
-        assertNonNull(mesh);
-        bubbleEvent<PickDetail>(this, "babylon.grabbed", { state: "dragging", mesh: mesh.id });
-    }
-
-    ondropped(mesh: Mesh) {
-        assertNonNull(mesh);
-        this.#invalidateCtx();
-        bubbleEvent<PickDetail>(this, "babylon.dropped", { state: "dropped", mesh: mesh.id });
-        if (mesh === this._selected) this.unpick();
     }
 }
