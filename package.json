@@ -1,8 +1,9 @@
 {
-  "name": "qw-viewer",
+  "name": "my-babylonjs-viewer",
+  "description": "My own babylon-viewer, with blackjack and hookers",
+  "version": "1.0.7",
+  "author": "qwiglydee@gmail.com",
   "private": true,
-  "version": "1.0.0",
-  "description": "My babylonjs viewer",
   "type": "module",
   "scripts": {
     "dev": "vite --port 8000",
@@ -10,8 +11,10 @@
   },
   "dependencies": {
     "@babylonjs/core": "^8.0.0",
+    "@babylonjs/gui": "^8.0.0",
     "@babylonjs/loaders": "^8.0.0",
-    "bootstrap": "^5.0.0",
+    "@babylonjs/materials": "^8.0.0",
+    "@lit/context": "^1.1.6",
     "lit": "^3.3.0"
   },
   "devDependencies": {
