@@ -3,27 +3,94 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Demo page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyBabylon test page</title>
     <link rel="stylesheet" href="bootstrap.min.css">
     <style>
         body {
-            width: 100vw;
-            height: 100vh;
+            height: var(--vh100, 100vh);
+            overflow: hidden;
+            touch-action: none;
+            padding: 1rem;
+            background-color: var(--bs-gray);
         }
 
-        my-element {
-            width: 800px;
-            height: 600px;
+        our-app {
+            position: relative;
+            display: block;
+            overflow: hidden;
+            min-height: 360px;
+        }
+
+        our-status {
+            position: absolute;
+            display: block;
+            width: 100%;
+            min-height: 1rem;
+            bottom: 0;
+            background-color: var(--bs-light);
+        }
+
+        my-babylon {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            --my-background-color: var(--bs-dark);
         }
     </style>
-    <script type="module" src="./src/index.ts"></script>
+    <script src="src/utils/fullscreen.js"></script>
+    <script type="module" src="src/index.js"></script>
 </head>
 
 <body>
-    <my-element></my-element>
+    
+    <our-app class="h-100 container p-0 border rounded-3">
+        <my-babylon worldSize="32" picking dragging highlighting>
+            <my-camera-arc autoSpin autoZoom autoFocus focusFactor="0.5"></my-camera-arc>
+            <my-environ sky skyIntens="0.1" skyBlur="0.75"></my-environ>
+            <my-ground autoSize></my-ground>
+            <my-stuff radius="5" count="3" shuffling></my-stuff>
+            <my-something></my-something>
+        </my-babylon>
+        <our-status></our-status>
+    </our-app>
+
+    <script>
+        var our = { 
+            app: document.querySelector("our-app"), 
+            something: document.querySelector("our-something"), 
+        };
+        var my = { 
+            babylon: document.querySelector("my-babylon"),
+            environ: document.querySelector("my-environ"), 
+            ground: document.querySelector("my-ground"),
+            stuff: document.querySelector("my-stuff"),
+            camera: document.querySelector("my-camera-arc"),
+        };
+
+        my.babylon.addEventListener('babylon.updated', function(e) {
+            console.debug(e.type, e.detail);
+        })
+
+        my.babylon.addEventListener('babylon.picked', function(e) {
+            console.debug(e.type, e.detail);
+        });
+
+        my.babylon.addEventListener('babylon.grabbed', function(e) {
+            console.debug(e.type, e.detail);
+        });
+
+        my.babylon.addEventListener('babylon.dropped', function(e) {
+            console.debug(e.type, e.detail);
+        });
+    </script>
+
+
+    <script type="module">
+        import { Vector3, Color3 } from "@babylonjs/core/Maths";
+        window.V3 = Vector3;
+        window.C3 = Color3;
+    </script>
 </body>
-<script>
-    var my = document.querySelector("my-element");
-</script>
 
 </html>
