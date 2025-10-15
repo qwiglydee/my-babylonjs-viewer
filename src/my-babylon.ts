@@ -60,10 +60,13 @@ export class MyBabylonElem extends ReactiveElement {
     static override styles = css`
         :host {
             display: block;
+            position: relative;
             background-color: var(--my-background-color, #808080);
         }
 
         canvas {
+            display: block;
+            position: absolute;
             width: 100%;
             height: 100%;
         }
@@ -153,6 +156,7 @@ export class MyBabylonElem extends ReactiveElement {
     #init() {
         debug(this, "initializing");
         this.engine = new Engine(this.canvas, undefined, ENGOPTIONS);
+        this.engine.resize();
         this.scene = new MyScene(this.engine);
         this.scene.useRightHandedSystem = this.rightHanded;
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue("--my-background-color"));
