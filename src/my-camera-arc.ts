@@ -2,13 +2,15 @@ import { consume } from "@lit/context";
 import { ReactiveElement, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
-import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import { Vector3 } from "@babylonjs/core/Maths";
+import { ArcRotateCamera, ComputeAlpha, ComputeBeta } from "@babylonjs/core/Cameras/arcRotateCamera";
+import type { PickingInfo } from "@babylonjs/core/Collisions/pickingInfo";
+import { Lerp, Vector3 } from "@babylonjs/core/Maths";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import type { Nullable } from "@babylonjs/core/types";
 
-import { sceneCtx, type SceneCtx } from "./context";
+import { sceneCtx, pickCtx, type SceneCtx } from "./context";
 import { assertNonNull } from "./utils/asserts";
+import { debug } from "./utils/debug";
 
 @customElement("my-camera-arc")
 export class MyArcCameraElem extends ReactiveElement {
@@ -16,20 +18,36 @@ export class MyArcCameraElem extends ReactiveElement {
     @state()
     ctx: Nullable<SceneCtx> = null;
 
+    @consume({ context: pickCtx, subscribe: true })
+    @state()
+    pick: Nullable<PickingInfo> = null;
+
+    @property({ type: Number })
+    initAlpha = 45;
+
+    @property({ type: Number })
+    initBeta = 45;
+
+    /** adjust zoom to fit whole scene when it changes */
     @property({ type: Boolean })
     autoZoom = false;
-
-    @property({ type: Boolean })
-    autoSpin = false;
 
     @property({ type: Number })
     zoomFactor = 1.0;
 
-    @property({ type: Number })
-    initAlpha: number = 45;
+    /** rotate and zoom towards picked mesh */
+    @property({ type: Boolean })
+    autoFocus = false;
 
+    /**
+     * focusFactor = 0 -- keep current distance (rotate only)
+     * focusFactor = 1 -- zoom to fit
+     */
     @property({ type: Number })
-    initBeta: number = 45;
+    focusFactor = 0.5;
+
+    @property({ type: Boolean })
+    autoSpin = false;
 
     protected override shouldUpdate(_changes: PropertyValues): boolean {
         return this.ctx != null;
@@ -39,6 +57,10 @@ export class MyArcCameraElem extends ReactiveElement {
         if (!this.hasUpdated) this.#create();
         else {
             if ((changes.has("ctx") || changes.has("autoZoom")) && this.autoZoom) this.reframe();
+            if ((changes.has("pick")|| changes.has("autoFocus")) && this.autoFocus) {
+                if (this.pick) this.refocus();
+                else this.reset();
+            }
             if (changes.has("autoSpin")) this._camera.useAutoRotationBehavior = this.autoSpin;
         }
         super.update(changes);
@@ -47,6 +69,7 @@ export class MyArcCameraElem extends ReactiveElement {
     _camera!: ArcRotateCamera;
 
     #create() {
+        debug(this, "creating");
         const scene = this.ctx!.scene;
         const radius = 0.5 * this.ctx!.worldSize;
         this._camera = new ArcRotateCamera("(Camera)", Tools.ToRadians(this.initAlpha), Tools.ToRadians(this.initBeta), radius, Vector3.Zero(), scene);
@@ -71,11 +94,49 @@ export class MyArcCameraElem extends ReactiveElement {
         this._camera.setEnabled(true);
     }
 
+    #adjust(params: { alpha?: number; beta?: number; radius?: number; target?: Vector3 }) {
+        this._camera.autoRotationBehavior?.resetLastInteractionTime();
+        const alpha = params.alpha ?? this._camera.alpha;
+        const beta = params.beta ?? this._camera.beta;
+        const radius = params.radius ?? this._camera.radius;
+        const target = params.target ?? this._camera.target;
+        this._camera.lowerRadiusLimit = 0.5 * radius;
+        this._camera.upperRadiusLimit = 1.5 * radius;
+        this._camera.interpolateTo(alpha, beta, radius, target);
+    }
+
+    /** move to initial position and best zoom */
+    reset() {
+        assertNonNull(this.ctx);
+        const target = Vector3.Center(this.ctx.bounds.min, this.ctx.bounds.max);
+        const radius = this._camera._calculateLowerRadiusFromModelBoundingSphere(this.ctx.bounds.min, this.ctx.bounds.max);
+        const alpha = Tools.ToRadians(this.initAlpha);
+        const beta = Tools.ToRadians(this.initBeta); 
+        debug(this, "resetting");
+        this.#adjust({target, radius, alpha, beta});
+    }
+
+    /** zoom to fit all scene (keep angle) */
     reframe() {
         assertNonNull(this.ctx);
-        this._camera.autoRotationBehavior?.resetLastInteractionTime();
-        const distance = this._camera._calculateLowerRadiusFromModelBoundingSphere(this.ctx.bounds.min, this.ctx.bounds.max, this.zoomFactor);
-        this._camera.radius = distance;
-        this._camera.focusOn({ ...this.ctx.bounds, distance }, true);
+        const radius = this._camera._calculateLowerRadiusFromModelBoundingSphere(this.ctx.bounds.min, this.ctx.bounds.max, this.zoomFactor);
+        debug(this, "reframing");
+        this.#adjust({ radius });
+    }
+
+    /** move/rotate towards picked for best view */
+    refocus() {
+        assertNonNull(this.ctx);
+        assertNonNull(this.pick?.pickedMesh) 
+        const bbox = this.pick.pickedMesh.getBoundingInfo().boundingBox;
+        const target = bbox.centerWorld;
+        const vector = this._camera.position.subtract(target);
+        const dist = vector.length();
+        const best = this._camera._calculateLowerRadiusFromModelBoundingSphere(bbox.minimumWorld, bbox.maximumWorld);
+        const radius = Lerp(dist, best, this.focusFactor); 
+        const alpha = ComputeAlpha(vector);
+        const beta = ComputeBeta(vector.y, radius)  
+        debug(this, "refocusing");
+        this.#adjust({target, radius, alpha, beta});
     }
 }
