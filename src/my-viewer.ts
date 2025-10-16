@@ -1,6 +1,6 @@
 import { provide } from "@lit/context";
-import { css, ReactiveElement, type PropertyValues } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { css, html, ReactiveElement, render, type PropertyValues } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 
 import type { PickingInfo } from "@babylonjs/core/Collisions/pickingInfo";
 import { Engine } from "@babylonjs/core/Engines/engine";
@@ -58,13 +58,29 @@ export class MyViewerElem extends ReactiveElement {
             z-index: 0;
         }
 
-        .overlay {
+        slot[name="overlay"] {
             position: absolute;
+            display: block;
+            width: 100%;
+            height: 100%;
             z-index: 1;
+            pointer-events: none;
         }
     `;
 
-    canvas: HTMLCanvasElement;
+    /* single-shot rendering, not updating */
+    #renderHTML() {
+        render(
+            html`
+                <canvas></canvas>
+                <slot name="overlay" class="overlay"></slot>
+            `,
+            this.renderRoot
+        );
+    }
+
+    @query('canvas')
+    canvas!: HTMLCanvasElement;
     engine!: Engine;
 
     scene!: MyScene;
@@ -75,7 +91,6 @@ export class MyViewerElem extends ReactiveElement {
 
     constructor() {
         super();
-        this.canvas = this.ownerDocument.createElement("canvas");
         this.#resizingObs = new ResizeObserver(() => {
             this.#needresize = true;
         });
@@ -131,7 +146,7 @@ export class MyViewerElem extends ReactiveElement {
 
     override connectedCallback(): void {
         super.connectedCallback();
-        this.renderRoot.appendChild(this.canvas);
+        this.#renderHTML();
         this.#init();
         this.#initPicking();
         this.#resizingObs.observe(this);
@@ -142,7 +157,6 @@ export class MyViewerElem extends ReactiveElement {
         this.#resizingObs.disconnect();
         this.#visibilityObs.disconnect();
         this.#dispose();
-        this.renderRoot.removeChild(this.canvas);
         super.disconnectedCallback();
     }
 
