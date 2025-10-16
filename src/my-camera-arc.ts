@@ -10,7 +10,6 @@ import type { Nullable } from "@babylonjs/core/types";
 
 import { sceneCtx, pickCtx, type SceneCtx } from "./context";
 import { assertNonNull } from "./utils/asserts";
-import { debug } from "./utils/debug";
 
 @customElement("my-camera-arc")
 export class MyArcCameraElem extends ReactiveElement {
@@ -69,7 +68,6 @@ export class MyArcCameraElem extends ReactiveElement {
     _camera!: ArcRotateCamera;
 
     #create() {
-        debug(this, "creating");
         const scene = this.ctx!.scene;
         const radius = 0.5 * this.ctx!.worldSize;
         this._camera = new ArcRotateCamera("(Camera)", Tools.ToRadians(this.initAlpha), Tools.ToRadians(this.initBeta), radius, Vector3.Zero(), scene);
@@ -112,7 +110,6 @@ export class MyArcCameraElem extends ReactiveElement {
         const radius = this._camera._calculateLowerRadiusFromModelBoundingSphere(this.ctx.bounds.min, this.ctx.bounds.max);
         const alpha = Tools.ToRadians(this.initAlpha);
         const beta = Tools.ToRadians(this.initBeta); 
-        debug(this, "resetting");
         this.#adjust({target, radius, alpha, beta});
     }
 
@@ -120,7 +117,6 @@ export class MyArcCameraElem extends ReactiveElement {
     reframe() {
         assertNonNull(this.ctx);
         const radius = this._camera._calculateLowerRadiusFromModelBoundingSphere(this.ctx.bounds.min, this.ctx.bounds.max, this.zoomFactor);
-        debug(this, "reframing");
         this.#adjust({ radius });
     }
 
@@ -136,7 +132,6 @@ export class MyArcCameraElem extends ReactiveElement {
         const radius = Lerp(dist, best, this.focusFactor); 
         const alpha = ComputeAlpha(vector);
         const beta = ComputeBeta(vector.y, radius)  
-        debug(this, "refocusing");
         this.#adjust({target, radius, alpha, beta});
     }
 }
