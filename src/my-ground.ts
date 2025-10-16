@@ -2,15 +2,14 @@ import { consume } from "@lit/context";
 import { ReactiveElement, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
+import { BackgroundMaterial } from "@babylonjs/core/Materials/Background/backgroundMaterial";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { Color3 } from "@babylonjs/core/Maths";
 import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
-import type { Scene } from "@babylonjs/core/scene";
 import type { Nullable } from "@babylonjs/core/types";
-import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
 
-import { sceneCtx, utilsCtx, type SceneCtx } from "./context";
+import { sceneCtx, type SceneCtx } from "./context";
 import { assertNonNull } from "./utils/asserts";
 
 const GROUND_TXT = new URL("./assets/ground.png?inline", import.meta.url);
@@ -21,9 +20,6 @@ export class MyGroundElem extends ReactiveElement {
     @state()
     ctx: Nullable<SceneCtx> = null;
 
-    @consume({ context: utilsCtx, subscribe: false })
-    utils!: Scene;
-
     @property({ type: Boolean })
     autoSize = false;
 
@@ -31,16 +27,13 @@ export class MyGroundElem extends ReactiveElement {
     radius: Nullable<number> = null;
 
     @property()
-    color: string = "#20f0f0";
+    color: string = "#808080";
 
     @property({ type: Number })
-    opacity = 0.5;
-
-    @property({ type: Number })
-    opacity2 = 0.75;
+    opacity = 1.0;
 
     protected override shouldUpdate(_changes: PropertyValues): boolean {
-        return this.ctx != null && this.utils != null;
+        return this.ctx != null;
     }
 
     override update(changes: PropertyValues) {
@@ -53,11 +46,11 @@ export class MyGroundElem extends ReactiveElement {
             if (changes.has("radius") && !this.autoSize) this.resize();
 
             if (changes.has("opacity")) {
-                this._mtl.opacity = this.opacity;
+                this._mtl.alpha = this.opacity;
             }
 
             if (changes.has("color")) {
-                this._mtl.lineColor = Color3.FromHexString(this.color);
+                this._mtl.primaryColor = Color3.FromHexString(this.color);
             }
         }
 
@@ -65,23 +58,23 @@ export class MyGroundElem extends ReactiveElement {
     }
 
     _mesh!: Mesh;
-    _mtl!: GridMaterial;
+    _mtl!: BackgroundMaterial;
 
     #create() {
         assertNonNull(this.ctx);
-        const scene = this.utils;
+        const scene = this.ctx.scene;
 
         this._mesh = CreateGround("(Ground)", { width: 1.0, height: 1.0, subdivisions: 1 }, scene);
         this._mesh.isPickable = false;
+        scene.markAux(this._mesh);
 
-        this._mtl = new GridMaterial("(Ground)", scene);
-        this._mtl.lineColor = Color3.FromHexString(this.color);
-        this._mtl.majorUnitFrequency = 8;
-        this._mtl.minorUnitVisibility = this.opacity2;
+        this._mtl = new BackgroundMaterial("(Ground)", scene);
+        this._mtl.useRGBColor = false;
+        this._mtl.primaryColor = Color3.FromHexString(this.color);
         this._mtl.backFaceCulling = false;
-        this._mtl.opacity = this.opacity;
-        this._mtl.opacityTexture = new Texture(GROUND_TXT.href, scene);
-
+        this._mtl.alpha = this.opacity;
+        this._mtl.diffuseTexture = new Texture(GROUND_TXT.href, scene);
+        this._mtl.diffuseTexture.hasAlpha = true;
         this._mesh.material = this._mtl;
     }
 
@@ -97,6 +90,5 @@ export class MyGroundElem extends ReactiveElement {
     _resize(size: number) {
         this._mesh.scaling.x = size;
         this._mesh.scaling.z = size;
-        this._mtl.gridRatio = 1 / size;
     }
 }
