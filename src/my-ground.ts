@@ -11,6 +11,7 @@ import type { Nullable } from "@babylonjs/core/types";
 
 import { sceneCtx, type SceneCtx } from "./context";
 import { assertNonNull } from "./utils/asserts";
+// import { debug, debugChanges } from "./utils/debug";
 
 const GROUND_TXT = new URL("./assets/ground.png?inline", import.meta.url);
 
@@ -18,49 +19,33 @@ const GROUND_TXT = new URL("./assets/ground.png?inline", import.meta.url);
 export class MyGroundElem extends ReactiveElement {
     @consume({ context: sceneCtx, subscribe: true })
     @state()
-    ctx: Nullable<SceneCtx> = null;
+    ctx!: SceneCtx;
+
+    @property({ type: Number })
+    size: Nullable<number> = null;
 
     @property({ type: Boolean })
     autoSize = false;
 
-    @property({ type: Number })
-    radius: Nullable<number> = null;
-
     @property()
-    color: string = "#808080";
+    color: string = "#20f0f0";
 
     @property({ type: Number })
-    opacity = 1.0;
+    opacity = 0.5;
 
-    protected override shouldUpdate(_changes: PropertyValues): boolean {
-        return this.ctx != null;
-    }
+    @state()
+    _size: number = 0;
 
-    override update(changes: PropertyValues) {
-        if (!this.hasUpdated) {
-            this.#create();
-            this.resize();
-        }
-        else {
-            if ((changes.has("ctx") || changes.has("autoSize")) && this.autoSize) this.resize();
-            if (changes.has("radius") && !this.autoSize) this.resize();
-
-            if (changes.has("opacity")) {
-                this._mtl.alpha = this.opacity;
-            }
-
-            if (changes.has("color")) {
-                this._mtl.primaryColor = Color3.FromHexString(this.color);
-            }
-        }
-
-        super.update(changes);
+    override connectedCallback(): void {
+        super.connectedCallback();
+        this.#init();
     }
 
     _mesh!: Mesh;
     _mtl!: BackgroundMaterial;
 
-    #create() {
+    #init() {
+        // debug(this, "initilizing");
         assertNonNull(this.ctx);
         const scene = this.ctx.scene;
 
@@ -76,19 +61,41 @@ export class MyGroundElem extends ReactiveElement {
         this._mtl.diffuseTexture = new Texture(GROUND_TXT.href, scene);
         this._mtl.diffuseTexture.hasAlpha = true;
         this._mesh.material = this._mtl;
+
+        this._size = this.size ?? this.#calcSize();
     }
 
-    resize() {
+    #calcSize() {
         assertNonNull(this.ctx);
-        if (this.autoSize) {
-            this._resize(4 * Math.max(this.ctx!.bounds.max.length(), this.ctx!.bounds.min.length()));
+        if (this.ctx.bounds) {
+            return 3 * Math.max(
+                Math.abs(this.ctx.bounds.minimum.x), 
+                Math.abs(this.ctx.bounds.minimum.z), 
+                Math.abs(this.ctx.bounds.maximum.x), 
+                Math.abs(this.ctx.bounds.maximum.z), 
+            )
         } else {
-            this._resize(this.radius ? this.radius * 2 : this.ctx.worldSize)
+            return 2 * Math.max(this.ctx.scene.worldSize.x, this.ctx.scene.worldSize.z);
         }
     }
 
-    _resize(size: number) {
-        this._mesh.scaling.x = size;
-        this._mesh.scaling.z = size;
+    #resize() {
+        // debug(this, "resizing", { size: this._size });
+        this._mesh.scaling.x = this._size;
+        this._mesh.scaling.z = this._size;
+    }
+
+    override update(changes: PropertyValues) {
+        if ((changes.has("ctx") || changes.has("autoSize")) && this.autoSize) this._size = this.#calcSize();
+
+        if (changes.has("size") && this.size) this._size = this.size;
+
+        if (changes.has("_size")) this.#resize();
+
+        if (changes.has("opacity")) this._mtl.alpha = this.opacity;
+
+        if (changes.has("color")) this._mtl.primaryColor = Color3.FromHexString(this.color);
+        
+        super.update(changes);
     }
 }

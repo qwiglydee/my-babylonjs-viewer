@@ -7,17 +7,17 @@ import { Engine } from "@babylonjs/core/Engines/engine";
 import type { EngineOptions } from "@babylonjs/core/Engines/thinEngine";
 import { PointerEventTypes, PointerInfo } from "@babylonjs/core/Events/pointerEvents";
 import "@babylonjs/core/Layers/effectLayerSceneComponent";
-import { Color4 } from "@babylonjs/core/Maths";
+import { Color4, Vector3 } from "@babylonjs/core/Maths";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { UtilityLayerRenderer } from "@babylonjs/core/Rendering/utilityLayerRenderer";
+import type { Scene } from "@babylonjs/core/scene";
 import type { Nullable } from "@babylonjs/core/types";
 
-import type { Scene } from "@babylonjs/core/scene";
 import { pickCtx, sceneCtx, utilsCtx, type PickDetail, type SceneCtx } from "./context";
 import { MyScene } from "./scene";
 import { assertNonNull } from "./utils/asserts";
-import { debug } from "./utils/debug";
-import { bubbleEvent } from "./utils/events";
+// import { debug } from "./utils/debug";
+import { queueEvent } from "./utils/events";
 
 const ENGOPTIONS: EngineOptions = {
     antialias: true,
@@ -28,11 +28,13 @@ const ENGOPTIONS: EngineOptions = {
 
 @customElement("my-viewer")
 export class MyViewerElem extends ReactiveElement {
+    /** available immediately, updating when scene content changes */
     @provide({ context: sceneCtx })
-    ctx: Nullable<SceneCtx> = null; // updated when changed and got ready 
+    ctx!: SceneCtx;
 
+    /** utility layer scene */
     @provide({ context: utilsCtx })
-    utils!: Scene; // utilityrender scene, available right after dom connection, const
+    utils!: Scene;
 
     @provide({ context: pickCtx })
     pick: Nullable<PickingInfo> = null;
@@ -57,7 +59,7 @@ export class MyViewerElem extends ReactiveElement {
             height: 100%;
             z-index: 0;
         }
-
+        
         slot[name="overlay"] {
             position: absolute;
             display: block;
@@ -81,8 +83,8 @@ export class MyViewerElem extends ReactiveElement {
 
     @query('canvas')
     canvas!: HTMLCanvasElement;
-    engine!: Engine;
 
+    engine!: Engine;
     scene!: MyScene;
 
     #needresize = true;
@@ -127,6 +129,7 @@ export class MyViewerElem extends ReactiveElement {
     _ctx_dirty = true;
 
     #invalidateCtx() {
+        // debug(this, 'CTX');
         this._ctx_dirty = true;
     }
 
@@ -135,13 +138,13 @@ export class MyViewerElem extends ReactiveElement {
         if (!this._ctx_dirty) return;
         await this.scene.whenReadyAsync(true);
         this.ctx = {
-            worldSize: this.worldSize,
             scene: this.scene,
-            bounds: this.scene.getModelExtends(),
+            world: this.scene.getWorldBounds(),
+            bounds: this.scene.getModelBounds(),
         };
         this._ctx_dirty = false;
         // debug(this, `CTX ==`, this.ctx);
-        bubbleEvent(this, "babylon.updated", {});
+        queueEvent(this, "babylon.updated", {});
     }
 
     override connectedCallback(): void {
@@ -151,6 +154,13 @@ export class MyViewerElem extends ReactiveElement {
         this.#initPicking();
         this.#resizingObs.observe(this);
         this.#visibilityObs.observe(this);
+        this.scene.onModelUpdatedObservable.add(() => this.#invalidateCtx());
+        // NB: initial scene is not ready yet but it's empty anyway
+        this.ctx = {
+            scene: this.scene,
+            world: this.scene.getWorldBounds(),
+            bounds: null,
+        }
     }
 
     override disconnectedCallback(): void {
@@ -162,15 +172,10 @@ export class MyViewerElem extends ReactiveElement {
 
     #init() {
         this.engine = new Engine(this.canvas, undefined, ENGOPTIONS);
-        this.engine.resize();
-        this.scene = new MyScene(this.engine);
+        this.scene = new MyScene(this.engine, Vector3.One().scale(this.worldSize));
         this.scene.useRightHandedSystem = this.rightHanded;
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue("--my-background-color"));
-
         this.utils = (new UtilityLayerRenderer(this.scene, false, false)).utilityLayerScene;
-
-        this.scene.onModelUpdatedObservable.add(() => this.#invalidateCtx());
-        this.#refreshCtx();
     }
 
     #initPicking() {
@@ -188,7 +193,7 @@ export class MyViewerElem extends ReactiveElement {
     }
 
     override update(changes: PropertyValues) {
-        if (changes.has("_ctx_dirty")) this.#refreshCtx();
+        if (changes.has("_ctx_dirty") && this._ctx_dirty) this.#refreshCtx();
         super.update(changes);
     }
 
@@ -201,12 +206,12 @@ export class MyViewerElem extends ReactiveElement {
              
         this._selected = this.pick.pickedMesh as Mesh; 
 
-        bubbleEvent<PickDetail>(this, "babylon.picked", { state: "picked", mesh: this._selected.id });
+        queueEvent<PickDetail>(this, "babylon.picked", { state: "picked", mesh: this._selected.id });
     }
 
     unpick() {
         this._selected = null;
         this.pick = null;
-        bubbleEvent<PickDetail>(this, "babylon.picked", { mesh: null });
+        queueEvent<PickDetail>(this, "babylon.picked", { mesh: null });
     }
 }
