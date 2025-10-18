@@ -18,7 +18,7 @@ export const appCtx = createContext<AppCtx>(Symbol('app'));
 
 export interface SceneCtx {
     scene: MyScene;
-    world: BoundingBox;
+    world: Nullable<BoundingBox>;
     bounds: Nullable<BoundingBox>;
 }
 

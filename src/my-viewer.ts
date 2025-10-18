@@ -42,10 +42,7 @@ export class MyViewerElem extends ReactiveElement {
     @property({ type: Boolean })
     rightHanded = false;
 
-    @property({ type: Number })
-    worldSize = 100;
-
-    static override styles = css`
+static override styles = css`
         :host {
             display: block;
             position: relative;
@@ -172,7 +169,7 @@ export class MyViewerElem extends ReactiveElement {
 
     #init() {
         this.engine = new Engine(this.canvas, undefined, ENGOPTIONS);
-        this.scene = new MyScene(this.engine, Vector3.One().scale(this.worldSize));
+        this.scene = new MyScene(this.engine);
         this.scene.useRightHandedSystem = this.rightHanded;
         this.scene.clearColor = Color4.FromHexString(getComputedStyle(this).getPropertyValue("--my-background-color"));
         this.utils = (new UtilityLayerRenderer(this.scene, false, false)).utilityLayerScene;
